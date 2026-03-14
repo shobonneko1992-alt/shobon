@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>座席レイアウト</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a2a2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="座席">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #f0ede8;
+    font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+    touch-action: none;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px 12px 46px;
+  }
+
+  /* 曜日タブ */
+  .day-tabs {
+    flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+  }
+  .day-tab {
+    flex: 1;
+    padding: 7px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 7px 7px 0 0;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: #ddd8d0;
+    color: #999;
+    letter-spacing: 0.05em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .day-tab.active { color: #fff; }
+  .day-tab[data-day="0"].active { background: #d95050; }
+  .day-tab[data-day="1"].active { background: #d08020; }
+  .day-tab[data-day="2"].active { background: #3a9050; }
+  .day-tab[data-day="3"].active { background: #2a70b8; }
+  .day-tab[data-day="4"].active { background: #7040b8; }
+
+  /* AM/PMタブ */
+  .ampm-tabs {
+    flex-shrink: 0;
+    display: flex;
+    margin-bottom: 8px;
+    border: 1px solid #ddd;
+    border-top: none;
+    overflow: hidden;
+  }
+  .ampm-tab {
+    flex: 1;
+    padding: 5px 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: #e8e4de;
+    color: #aaa;
+    letter-spacing: 0.08em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ampm-tab.active { color: #fff; }
+  .ampm-tab.active.day0 { background: #d95050; }
+  .ampm-tab.active.day1 { background: #d08020; }
+  .ampm-tab.active.day2 { background: #3a9050; }
+  .ampm-tab.active.day3 { background: #2a70b8; }
+  .ampm-tab.active.day4 { background: #7040b8; }
+
+  /* ツールバー */
+  .toolbar {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .palette { display: flex; gap: 5px; align-items: center; }
+  .palette-label { font-size: 11px; color: #888; }
+  .color-btn {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .color-btn.active { border-color: #333; transform: scale(1.2); }
+  .legend { display: flex; gap: 10px; align-items: center; font-size: 10px; color: #888; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px;
+    display: inline-block; margin-right: 3px;
+    border: 1px solid rgba(0,0,0,0.1); vertical-align: middle;
+  }
+  .btn-group { display: flex; gap: 6px; margin-left: auto; }
+  .save-btn {
+    padding: 5px 12px; background: #2a7a2a; color: #fff;
+    border: none; border-radius: 4px; font-size: 11px;
+    cursor: pointer; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .reset-btn {
+    padding: 5px 12px; background: #2a2a2a; color: #fff;
+    border: none; border-radius: 4px; font-size: 11px;
+    cursor: pointer; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ボード */
+  #board {
+    flex: 1;
+    background: #fff;
+    border: 2px solid #ddd;
+    border-radius: 0 0 10px 10px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    background-image: radial-gradient(circle, #e0e0e0 1px, transparent 1px);
+    background-size: 24px 24px;
+    touch-action: none;
+  }
+  .board-label {
+    position: absolute; bottom: 8px; right: 12px;
+    font-size: 11px; color: #ddd; letter-spacing: 0.08em;
+    pointer-events: none; font-weight: 600;
+  }
+
+  /* 座席 */
+  .seat {
+    position: absolute;
+    width: 48px; height: 40px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: grab;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    border: 1.5px solid rgba(0,0,0,0.12);
+  }
+  .seat.dragging {
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    z-index: 999; opacity: 0.92;
+  }
+  .seat-num {
+    position: absolute; top: 2px; right: 4px;
+    font-size: 8px; font-weight: bold; color: rgba(0,0,0,0.22);
+  }
+  .seat-name {
+    font-size: 13px; max-width: 44px;
+    overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; text-align: center; font-weight: 500;
+  }
+  .seat-name.empty { color: rgba(0,0,0,0.22); font-weight: 400; font-size: 10px; }
+  .name-input {
+    width: 44px; font-size: 11px; text-align: center;
+    border: 1px solid #888; border-radius: 3px;
+    padding: 2px; outline: none;
+    font-family: inherit; background: rgba(255,255,255,0.9);
+  }
+
+  /* メモパネル */
+  #memo-handle {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: #e8e4de;
+    border-top: 2px solid #ccc;
+    border-radius: 14px 14px 0 0;
+    cursor: pointer;
+    z-index: 1000;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #memo-handle .handle-bar {
+    width: 36px; height: 4px;
+    background: #bbb; border-radius: 2px; margin-right: 8px;
+  }
+  #memo-handle .handle-label {
+    font-size: 12px; color: #888; letter-spacing: 0.05em;
+  }
+  #memo-panel {
+    position: fixed;
+    bottom: -100%;
+    left: 0; right: 0;
+    height: 55vh;
+    background: #faf9f6;
+    border-top: 2px solid #ccc;
+    border-radius: 16px 16px 0 0;
+    z-index: 999;
+    display: flex; flex-direction: column;
+    transition: bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+  }
+  #memo-panel.open { bottom: 0; }
+  #memo-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 8px;
+    flex-shrink: 0;
+  }
+  #memo-panel-title {
+    font-size: 13px; font-weight: 700; color: #444; letter-spacing: 0.05em;
+  }
+  #memo-close {
+    font-size: 20px; color: #aaa; cursor: pointer; line-height: 1;
+    padding: 0 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #memo-textarea {
+    flex: 1;
+    margin: 0 12px 12px;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    background: #fff;
+    color: #333;
+    line-height: 1.6;
+    touch-action: auto;
+  }
+  #memo-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.2);
+    z-index: 998;
+  }
+  #memo-overlay.show { display: block; }
+  #toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: #2a2a2a; color: #fff; padding: 8px 20px;
+    border-radius: 20px; font-size: 13px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 9999;
+  }
+  #toast.show { opacity: 1; }
+
+  .hint {
+    flex-shrink: 0;
+    margin-top: 5px; font-size: 10px; color: #bbb; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 曜日タブ -->
+  <div class="day-tabs">
+    <button class="day-tab active" data-day="0">月</button>
+    <button class="day-tab" data-day="1">火</button>
+    <button class="day-tab" data-day="2">水</button>
+    <button class="day-tab" data-day="3">木</button>
+    <button class="day-tab" data-day="4">金</button>
+  </div>
+
+  <!-- AM/PMタブ -->
+  <div class="ampm-tabs">
+    <button class="ampm-tab active day0" data-ampm="0">☀️ AM</button>
+    <button class="ampm-tab day0" data-ampm="1">🌙 PM</button>
+  </div>
+
+  <!-- ツールバー -->
+  <div class="toolbar">
+    <div class="palette">
+      <span class="palette-label">色：</span>
+      <button class="color-btn active" data-color="default" style="background:#eef2f7;"></button>
+      <button class="color-btn" data-color="blue"   style="background:#bfd9f5;"></button>
+      <button class="color-btn" data-color="pink"   style="background:#f5c0d0;"></button>
+      <button class="color-btn" data-color="green"  style="background:#b8e8c8;"></button>
+      <button class="color-btn" data-color="yellow" style="background:#f5e8a0;"></button>
+    </div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#bfd9f5;"></span>男性</span>
+      <span><span class="legend-dot" style="background:#f5c0d0;"></span>女性</span>
+    </div>
+    <div class="btn-group">
+      <button class="save-btn" id="save-btn">💾 保存</button>
+      <button class="reset-btn" id="reset-btn">リセット</button>
+    </div>
+  </div>
+
+  <!-- ボード -->
+  <div id="board">
+    <div class="board-label" id="board-label">月曜日 AM</div>
+  </div>
+
+  <p class="hint">色を選んでタップ → 色変更 ／ ダブルタップ → 名前入力 ／ ドラッグ → 移動</p>
+</div>
+
+<div id="memo-overlay"></div>
+
+<!-- メモハンドル -->
+<div id="memo-handle">
+  <div class="handle-bar"></div>
+  <span class="handle-label">📝 メモ ↑</span>
+</div>
+
+<!-- メモパネル -->
+<div id="memo-panel">
+  <div id="memo-panel-header">
+    <span id="memo-panel-title">📝 メモ</span>
+    <span id="memo-close">×</span>
+  </div>
+  <textarea id="memo-textarea" placeholder="ここにメモを入力…"></textarea>
+</div>
+
+<div id="toast">💾 保存しました！</div>
+
+<script>
+(function () {
+  const SEAT_COUNT = 19;
+  const SW = 48, SH = 40;
+  const STORAGE_KEY = 'seat-planner-v3';
+  const DAY_NAMES = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
+  const COLOR_MAP = {
+    default: { bg: '#eef2f7', text: '#333' },
+    blue:    { bg: '#bfd9f5', text: '#1a4a7a' },
+    pink:    { bg: '#f5c0d0', text: '#7a1a3a' },
+    green:   { bg: '#b8e8c8', text: '#1a5a30' },
+    yellow:  { bg: '#f5e8a0', text: '#5a4a00' },
+  };
+
+  // 状態
+  let allSeats = Array.from({length: 5}, () => [null, null]);
+  let currentDay = 0;
+  let currentAmPm = 0;
+  let selectedColor = 'default';
+  let dragging = null;
+  let dragOffX = 0, dragOffY = 0;
+  let dragMoved = false;
+  let lastTap = {};
+
+  // ユーティリティ
+  const board = () => document.getElementById('board');
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const getSeatEl = (id) => board().querySelector(`.seat[data-id="${id}"]`);
+  const getSeats = () => allSeats[currentDay][currentAmPm];
+
+  // 初期座席生成
+  function makeSeats() {
+    const b = board();
+    const W = b.clientWidth, H = b.clientHeight;
+    const cols = 6, rows = 3;
+    const px = (W - cols * SW) / (cols + 1);
+    const py = (H - rows * SH) / (rows + 1);
+    const seats = Array.from({length: 18}, (_, i) => ({
+      id: i + 1,
+      x: px + (i % cols) * (SW + px),
+      y: py + Math.floor(i / cols) * (SH + py),
+      name: '',
+      color: 'default'
+    }));
+    // 19番目は画面下部中央に配置
+    seats.push({
+      id: 19,
+      x: (W - SW) / 2,
+      y: H - SH - 12,
+      name: '',
+      color: 'default'
+    });
+    return seats;
+  }
+
+  function ensureSeats() {
+    if (!allSeats[currentDay][currentAmPm]) {
+      allSeats[currentDay][currentAmPm] = makeSeats();
+    }
+  }
+
+  // AM/PMタブの色更新
+  function updateAmPmColors() {
+    document.querySelectorAll('.ampm-tab').forEach((t, i) => {
+      t.className = `ampm-tab day${currentDay}${i === currentAmPm ? ' active' : ''}`;
+    });
+  }
+
+  // 座席を描画
+  function render() {
+    ensureSeats();
+    const b = board();
+    b.querySelectorAll('.seat').forEach(el => el.remove());
+    document.getElementById('board-label').textContent =
+      `${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
+
+    getSeats().forEach(seat => {
+      const c = COLOR_MAP[seat.color] || COLOR_MAP.default;
+      const el = document.createElement('div');
+      el.className = 'seat';
+      el.dataset.id = seat.id;
+      el.style.left = seat.x + 'px';
+      el.style.top = seat.y + 'px';
+      el.style.background = c.bg;
+      el.innerHTML =
+        `<span class="seat-name ${seat.name ? '' : 'empty'}" style="color:${seat.name ? c.text : 'rgba(0,0,0,0.25)'}">${seat.name || '名前'}</span>`;
+      el.addEventListener('mousedown', onMouseDown);
+      el.addEventListener('click', onSeatClick);
+      el.addEventListener('dblclick', onDblClick);
+      el.addEventListener('touchstart', onTouchStart, { passive: false });
+      el.addEventListener('touchend', onTouchEnd, { passive: false });
+      b.appendChild(el);
+    });
+  }
+
+  // 保存・読込
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allSeats));
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    } catch(e) { alert('保存できませんでした'); }
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length === 5) {
+          // 座席数が変わった場合はリセット
+          const firstSlot = parsed.flat().find(s => s !== null);
+          if (firstSlot && firstSlot.length === SEAT_COUNT) {
+            allSeats = parsed;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 色を適用
+  function applyColor(id) {
+    const seat = getSeats().find(s => s.id === id);
+    if (!seat) return;
+    seat.color = selectedColor;
+    const el = getSeatEl(id);
+    if (!el) return;
+    const c = COLOR_MAP[selectedColor];
+    el.style.background = c.bg;
+    const nameEl = el.querySelector('.seat-name');
+    if (nameEl) nameEl.style.color = nameEl.classList.contains('empty') ? 'rgba(0,0,0,0.25)' : c.text;
+  }
+
+  // 名前編集
+  function openEdit(el, id) {
+    const seat = getSeats().find(s => s.id === id);
+    if (!seat) return;
+    const nameEl = el.querySelector('.seat-name');
+    if (!nameEl) return;
+    const input = document.createElement('input');
+    input.className = 'name-input';
+    input.value = seat.name;
+    nameEl.replaceWith(input);
+    setTimeout(() => { input.focus(); input.select(); }, 10);
+    const commit = () => {
+      seat.name = input.value.trim();
+      const c = COLOR_MAP[seat.color] || COLOR_MAP.default;
+      const span = document.createElement('span');
+      span.className = 'seat-name' + (seat.name ? '' : ' empty');
+      span.style.color = seat.name ? c.text : 'rgba(0,0,0,0.25)';
+      span.textContent = seat.name || '名前';
+      if (input.parentNode) input.replaceWith(span);
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') input.blur();
+      if (ev.key === 'Escape') { input.value = seat.name; input.blur(); }
+      ev.stopPropagation();
+    });
+    input.addEventListener('mousedown', ev => ev.stopPropagation());
+    input.addEventListener('touchstart', ev => ev.stopPropagation());
+    input.addEventListener('touchend', ev => ev.stopPropagation());
+  }
+
+  // マウスイベント
+  function onMouseDown(e) {
+    if (e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    dragMoved = false;
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left;
+    dragOffY = e.clientY - rect.top;
+    dragging = parseInt(el.dataset.id);
+    el.classList.add('dragging');
+  }
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    dragMoved = true;
+    const rect = board().getBoundingClientRect();
+    const x = clamp(e.clientX - rect.left - dragOffX, 0, rect.width - SW);
+    const y = clamp(e.clientY - rect.top - dragOffY, 0, rect.height - SH);
+    const seat = getSeats().find(s => s.id === dragging);
+    if (seat) { seat.x = x; seat.y = y; }
+    const el = getSeatEl(dragging);
+    if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    const el = getSeatEl(dragging);
+    if (el) el.classList.remove('dragging');
+    dragging = null;
+  });
+
+  function onSeatClick(e) {
+    if (dragMoved) return;
+    applyColor(parseInt(e.currentTarget.dataset.id));
+  }
+
+  function onDblClick(e) {
+    e.stopPropagation();
+    openEdit(e.currentTarget, parseInt(e.currentTarget.dataset.id));
+  }
+
+  // タッチイベント
+  function onTouchStart(e) {
+    if (e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    dragMoved = false;
+    const el = e.currentTarget;
+    const touch = e.touches[0];
+    const rect = el.getBoundingClientRect();
+    dragOffX = touch.clientX - rect.left;
+    dragOffY = touch.clientY - rect.top;
+    dragging = parseInt(el.dataset.id);
+    el.classList.add('dragging');
+  }
+
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    dragMoved = true;
+    const touch = e.touches[0];
+    const rect = board().getBoundingClientRect();
+    const x = clamp(touch.clientX - rect.left - dragOffX, 0, rect.width - SW);
+    const y = clamp(touch.clientY - rect.top - dragOffY, 0, rect.height - SH);
+    const seat = getSeats().find(s => s.id === dragging);
+    if (seat) { seat.x = x; seat.y = y; }
+    const el = getSeatEl(dragging);
+    if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    if (!dragging) return;
+    const el = getSeatEl(dragging);
+    if (el) el.classList.remove('dragging');
+    dragging = null;
+  });
+
+  function onTouchEnd(e) {
+    if (dragMoved) return;
+    const el = e.currentTarget;
+    const id = parseInt(el.dataset.id);
+    const now = Date.now();
+    if (lastTap[id] && now - lastTap[id] < 400) {
+      e.preventDefault();
+      openEdit(el, id);
+      lastTap[id] = 0;
+    } else {
+      applyColor(id);
+      lastTap[id] = now;
+    }
+  }
+
+  // メモ (曜日×AM/PM ごとに保存)
+  let allMemos = Array.from({length:5}, () => ['','']);
+
+  function getMemoKey() { return `${currentDay}-${currentAmPm}`; }
+
+  function loadMemo() {
+    const ta = document.getElementById('memo-textarea');
+    ta.value = allMemos[currentDay][currentAmPm] || '';
+  }
+
+  function saveMemoState() {
+    allMemos[currentDay][currentAmPm] = document.getElementById('memo-textarea').value;
+  }
+
+  document.getElementById('memo-textarea').addEventListener('input', saveMemoState);
+
+  // パネル開閉
+  const memoPanel = document.getElementById('memo-panel');
+  const memoOverlay = document.getElementById('memo-overlay');
+
+  function openMemo() {
+    loadMemo();
+    memoPanel.classList.add('open');
+    memoOverlay.classList.add('show');
+  }
+  function closeMemo() {
+    saveMemoState();
+    memoPanel.classList.remove('open');
+    memoOverlay.classList.remove('show');
+  }
+
+  document.getElementById('memo-handle').addEventListener('click', openMemo);
+  document.getElementById('memo-close').addEventListener('click', closeMemo);
+  memoOverlay.addEventListener('click', closeMemo);
+
+  // スワイプアップでメモを開く（ボード外の下エリア）
+  let swipeStartY = null;
+  document.getElementById('memo-handle').addEventListener('touchstart', e => {
+    swipeStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.getElementById('memo-handle').addEventListener('touchend', e => {
+    if (swipeStartY !== null) {
+      const dy = swipeStartY - e.changedTouches[0].clientY;
+      if (dy > 20) openMemo();
+      swipeStartY = null;
+    }
+  }, { passive: true });
+
+  // 保存にメモも含める
+  const _origSaveData = saveData;
+  function saveData() {
+    saveMemoState();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos }));
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    } catch(e) { alert('保存できませんでした'); }
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // 新フォーマット
+        if (parsed && parsed.seats) {
+          if (Array.isArray(parsed.seats) && parsed.seats.length === 5) {
+            const firstSlot = parsed.seats.flat().find(s => s !== null);
+            if (!firstSlot || firstSlot.length === SEAT_COUNT) allSeats = parsed.seats;
+          }
+          if (parsed.memos && Array.isArray(parsed.memos) && parsed.memos.length === 5) {
+            allMemos = parsed.memos;
+          }
+        }
+        // 旧フォーマット（配列直接）
+        else if (Array.isArray(parsed) && parsed.length === 5) {
+          const firstSlot = parsed.flat().find(s => s !== null);
+          if (!firstSlot || firstSlot.length === SEAT_COUNT) allSeats = parsed;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 曜日・AM/PM切替時にメモも更新
+  document.getElementById('memo-panel-title').textContent = '📝 メモ';
+  document.querySelectorAll('.day-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentDay = parseInt(tab.dataset.day);
+      updateAmPmColors();
+      render();
+      document.getElementById('memo-panel-title').textContent =
+        `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
+      if (memoPanel.classList.contains('open')) loadMemo();
+    });
+  });
+
+  document.querySelectorAll('.ampm-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentAmPm = parseInt(tab.dataset.ampm);
+      updateAmPmColors();
+      render();
+      document.getElementById('memo-panel-title').textContent =
+        `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
+      if (memoPanel.classList.contains('open')) loadMemo();
+    });
+  });
+
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedColor = btn.dataset.color;
+    });
+  });
+
+  document.getElementById('save-btn').addEventListener('click', saveData);
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    allSeats[currentDay][currentAmPm] = makeSeats();
+    render();
+  });
+
+  // 起動
+  loadData();
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+</body>
+</html>
