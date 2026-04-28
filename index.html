@@ -991,9 +991,18 @@
     document.getElementById('memo-textarea').value = slot[currentFolderId] || '';
   }
 
+  let _memoAutoSaveTimer = null;
+
   function saveMemoState() {
     const slot = getMemoSlot();
     slot[currentFolderId] = document.getElementById('memo-textarea').value;
+    // デバウンス付き自動保存（1秒後にlocalStorageへ書き込み）
+    clearTimeout(_memoAutoSaveTimer);
+    _memoAutoSaveTimer = setTimeout(function() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, folders: folderList }));
+      } catch(e) {}
+    }, 1000);
   }
 
   document.getElementById('memo-textarea').addEventListener('input', saveMemoState);
