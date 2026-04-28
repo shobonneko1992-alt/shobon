@@ -260,6 +260,117 @@
     flex-shrink: 0;
     margin-top: 5px; font-size: 10px; color: #bbb; text-align: center;
   }
+
+  /* フォルダタブ */
+  #folder-tab-row {
+    display: flex; align-items: center; gap: 0;
+    padding: 0 10px 8px; flex-shrink: 0;
+  }
+  #folder-tabs {
+    display: flex; gap: 5px; overflow-x: auto; flex: 1;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #folder-tabs::-webkit-scrollbar { display: none; }
+  .folder-tab {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 16px;
+    border: 1.5px solid #ddd;
+    background: #f0ede8;
+    color: #888;
+    font-size: 12px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s;
+  }
+  .folder-tab.active {
+    background: #2a2a2a; color: #fff; border-color: #2a2a2a;
+  }
+  #folder-add-btn {
+    flex-shrink: 0; margin-left: 6px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #e8e4de; border: none;
+    font-size: 20px; line-height: 1;
+    cursor: pointer; color: #888;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* フォルダ編集モーダル */
+  #folder-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 1100;
+  }
+  #folder-modal {
+    display: none; position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #faf9f6;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 18px 32px;
+    z-index: 1101;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+  }
+  #folder-modal input {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+    outline: none; margin-bottom: 12px;
+  }
+  #folder-modal input:focus { border-color: #2a2a2a; }
+
+  /* メモ検索 */
+  #memo-search-bar {
+    display: none;
+    flex-shrink: 0;
+    padding: 0 12px 8px;
+    gap: 8px;
+    align-items: center;
+  }
+  #memo-search-bar.open { display: flex; }
+  #memo-search-input {
+    flex: 1; padding: 8px 12px;
+    border: 1.5px solid #ddd; border-radius: 20px;
+    font-size: 13px; font-family: inherit;
+    outline: none; background: #fff;
+  }
+  #memo-search-input:focus { border-color: #2a2a2a; }
+  #memo-search-clear {
+    flex-shrink: 0; background: none; border: none;
+    font-size: 18px; color: #bbb; cursor: pointer;
+    padding: 0 2px; line-height: 1;
+  }
+  #memo-search-results {
+    flex: 1; overflow-y: auto;
+    margin: 0 12px 12px;
+    display: none;
+  }
+  #memo-search-results.open { display: block; }
+  .search-result-item {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: #fff; border-radius: 8px;
+    border: 1px solid #eee; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .search-result-item:active { background: #f0ede8; }
+  .search-result-folder {
+    font-size: 11px; font-weight: 700; color: #888;
+    margin-bottom: 4px;
+  }
+  .search-result-snippet {
+    font-size: 13px; color: #444; line-height: 1.5;
+  }
+  .search-result-snippet mark {
+    background: #ffe066; color: #333;
+    border-radius: 2px; padding: 0 1px;
+  }
+  .search-no-result {
+    text-align: center; color: #bbb;
+    font-size: 13px; padding: 24px 0;
+  }
 </style>
 </head>
 <body>
@@ -368,13 +479,10 @@
 
     <!-- 一括パネル -->
     <div id="transfer-bulk-panel">
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button id="export-btn" style="flex:1;padding:7px;background:#2a70b8;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📤 テキストで送る</button>
+      <div style="display:flex;gap:8px;">
+        <button id="export-btn" onclick="openMethodModal('bulk','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+        <button id="import-btn" onclick="openMethodModal('bulk','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button id="import-btn" style="flex:1;padding:7px;background:#d08020;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📥 テキストで受け取る</button>
-      </div>
-      <textarea id="import-text" placeholder="受け取ったテキストをここに貼り付け…" style="width:100%;height:55px;font-size:11px;border:1px solid #ddd;border-radius:6px;padding:6px;resize:none;outline:none;color:#333;"></textarea>
     </div>
 
     <!-- 曜日別パネル -->
@@ -389,21 +497,12 @@
           <option value="4-0">金AM</option><option value="4-1">金PM</option>
         </select>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button id="day-export-btn" style="flex:1;padding:7px;background:#2a70b8;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📤 テキストで送る</button>
-        <button id="day-qr-btn" style="flex:1;padding:7px;background:#3a9050;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📷 QRコード</button>
+      <div style="display:flex;gap:8px;">
+        <button id="day-export-btn" onclick="openMethodModal('day','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+        <button id="day-import-btn" onclick="openMethodModal('day','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button id="day-import-btn" style="flex:1;padding:7px;background:#d08020;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📥 テキストで受け取る</button>
-        <button id="day-scan-btn" style="flex:1;padding:7px;background:#7040b8;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📷 QRを読み取る</button>
-      </div>
-      <textarea id="day-transfer-text" placeholder="受け取ったテキストをここに貼り付け…" style="width:100%;height:55px;font-size:11px;border:1px solid #ddd;border-radius:6px;padding:6px;resize:none;outline:none;color:#333;"></textarea>
-      <!-- 曜日別QRコード表示エリア -->
-      <div id="day-qr-area" style="display:none;text-align:center;margin-top:10px;">
-        <div style="font-size:11px;color:#888;margin-bottom:6px;">スマホで読み取ってください</div>
-        <div id="day-qr-code"></div>
-        <button onclick="document.getElementById('day-qr-area').style.display='none'" style="margin-top:8px;padding:5px 16px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;">閉じる</button>
-      </div>
+      <!-- hidden elements for internal use -->
+      <textarea id="day-transfer-text" style="display:none;"></textarea>
     </div>
   </div>
 
@@ -424,7 +523,122 @@
 
 <div id="memo-overlay"></div>
 
-<!-- QRスキャナーモーダル -->
+<!-- 方法選択モーダル -->
+<div id="method-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;"></div>
+<div id="method-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:301;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <span id="method-modal-title" style="font-size:15px;font-weight:700;color:#333;"></span>
+    <span id="method-modal-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
+  </div>
+  <p id="method-modal-subtitle" style="font-size:11px;color:#999;margin-bottom:16px;"></p>
+
+  <!-- 方法選択ボタン -->
+  <div id="method-select-view">
+    <div style="display:flex;gap:10px;margin-bottom:8px;">
+      <button id="method-text-btn" style="flex:1;padding:18px 8px;background:#f0f4fa;border:2px solid #c0d4ee;border-radius:12px;font-size:13px;font-weight:700;color:#2a70b8;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <span style="font-size:28px;">📝</span>テキスト
+      </button>
+      <button id="method-qr-btn" style="flex:1;padding:18px 8px;background:#f0faf2;border:2px solid #b0dfc0;border-radius:12px;font-size:13px;font-weight:700;color:#3a9050;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <span style="font-size:28px;">📷</span>QRコード
+      </button>
+    </div>
+    <p id="method-qr-note" style="font-size:10px;color:#bbb;text-align:center;display:none;">※ 一括データはQR非対応（データ量が多すぎます）</p>
+  </div>
+
+  <!-- テキスト送る -->
+  <div id="method-text-send-view" style="display:none;">
+    <textarea id="method-export-text" readonly style="width:100%;height:80px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#555;background:#f5f5f5;margin-bottom:10px;"></textarea>
+    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">テキストエリアを長押し →「すべて選択」→「コピー」してLINEやメールで送ってください。</p>
+    <button id="method-copy-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📋 コピーする</button>
+    <button id="method-download-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📄 テキストファイルで保存・共有</button>
+  </div>
+
+  <!-- テキスト受け取る -->
+  <div id="method-text-recv-view" style="display:none;">
+    <textarea id="method-import-text" placeholder="受け取ったテキストをここに貼り付け…" style="width:100%;height:80px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;"></textarea>
+    <button id="method-import-do-btn" style="width:100%;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 読み込む</button>
+  </div>
+
+  <!-- QR送る -->
+  <div id="method-qr-send-view" style="display:none;text-align:center;">
+    <p style="font-size:11px;color:#888;margin-bottom:10px;">相手のスマホで読み取ってください</p>
+    <div id="method-qr-code" style="display:inline-block;"></div>
+  </div>
+</div>
+
+
+<!-- メモ テキスト受け取りシート -->
+<div id="memo-recv-text-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1200;"></div>
+<div id="memo-recv-text-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1201;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:15px;font-weight:700;color:#333;">📥 テキストで受け取る</span>
+    <span id="memo-recv-text-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
+  </div>
+  <p style="font-size:11px;color:#999;margin-bottom:10px;">送ってもらったテキストを貼り付けてください</p>
+  <textarea id="memo-recv-text-input" placeholder="ここに貼り付け…" style="width:100%;height:80px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;font-family:inherit;"></textarea>
+  <button id="memo-recv-text-do-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
+</div>
+
+<!-- 共有リンクモーダル -->
+<div id="share-link-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1200;"></div>
+<div id="share-link-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1201;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:15px;font-weight:700;color:#333;">🔗 メモを共有</span>
+    <span id="share-link-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
+  </div>
+  <p id="share-link-desc" style="font-size:11px;color:#999;margin-bottom:12px;"></p>
+
+  <!-- タブ切替 -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button id="share-tab-qr"   onclick="switchShareTab('qr')"   style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #2a2a2a;background:#2a2a2a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📷 QR</button>
+    <button id="share-tab-text" onclick="switchShareTab('text')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ddd;background:#f0ede8;color:#888;font-size:12px;font-weight:700;cursor:pointer;">📝 テキスト</button>
+    <button id="share-tab-link" onclick="switchShareTab('link')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ddd;background:#f0ede8;color:#888;font-size:12px;font-weight:700;cursor:pointer;">🔗 リンク</button>
+  </div>
+
+  <!-- QRビュー -->
+  <div id="share-qr-view" style="text-align:center;">
+    <p style="font-size:11px;color:#aaa;margin-bottom:10px;">相手のアプリのQRスキャンで読み取れます</p>
+    <div id="share-memo-qr" style="display:inline-block;margin-bottom:10px;"></div>
+    <p id="share-qr-error" style="display:none;font-size:12px;color:#e05050;">データが大きすぎます。<br>テキストタブをお使いください。</p>
+  </div>
+
+  <!-- テキストビュー -->
+  <div id="share-text-view" style="display:none;">
+    <p style="font-size:11px;color:#888;margin-bottom:8px;">テキストをコピーしてLINEやメールで送ってください。相手はメモパネルの 📥 から貼り付けて受け取れます。</p>
+    <textarea id="share-text-output" readonly style="width:100%;height:70px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#555;background:#f5f5f5;margin-bottom:10px;"></textarea>
+    <button id="share-text-copy-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📋 コピーする</button>
+    <button id="share-text-native-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 共有する</button>
+  </div>
+
+  <!-- リンクビュー -->
+  <div id="share-link-view" style="display:none;">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <input id="share-link-input" readonly style="flex:1;padding:9px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:11px;background:#f5f5f5;color:#555;outline:none;">
+      <button id="share-link-copy-btn" style="flex-shrink:0;padding:9px 14px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">コピー</button>
+    </div>
+    <button id="share-link-share-btn" style="width:100%;padding:11px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 このリンクを共有</button>
+  </div>
+</div>
+
+<!-- メモ受信バナー（URLパラメータ検出時） -->
+<div id="memo-recv-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#2a2a2a;color:#fff;padding:14px 16px;z-index:2000;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+  <div style="font-size:13px;font-weight:700;margin-bottom:4px;">📩 メモが届いています</div>
+  <div id="memo-recv-desc" style="font-size:11px;color:#bbb;margin-bottom:10px;"></div>
+  <div style="display:flex;gap:8px;">
+    <button id="memo-recv-accept" style="flex:1;padding:9px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
+    <button id="memo-recv-dismiss" style="flex:1;padding:9px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">閉じる</button>
+  </div>
+</div>
+
+<!-- メモQR受信モーダル -->
+<div id="memo-qr-recv-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1500;"></div>
+<div id="memo-qr-recv-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1501;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
+  <div style="font-size:15px;font-weight:700;color:#333;margin-bottom:6px;">📩 メモが届きました</div>
+  <div id="memo-qr-recv-desc" style="font-size:12px;color:#888;margin-bottom:16px;"></div>
+  <button id="memo-qr-recv-accept" style="width:100%;padding:11px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">取り込む</button>
+  <button id="memo-qr-recv-dismiss" style="width:100%;padding:11px;background:none;color:#aaa;border:none;font-size:13px;cursor:pointer;">キャンセル</button>
+</div>
+
 <div id="scanner-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;">
   <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;">📷 QRコードを読み取る</div>
   <div style="position:relative;width:280px;height:280px;">
@@ -447,9 +661,36 @@
 <div id="memo-panel">
   <div id="memo-panel-header">
     <span id="memo-panel-title">📝 メモ</span>
-    <span id="memo-close">×</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="memo-share-link-btn" title="共有リンクを生成" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">🔗</button>
+      <button id="memo-recv-text-btn" title="テキストで受け取る" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">📥</button>
+      <button id="memo-search-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">🔍</button>
+      <span id="memo-close">×</span>
+    </div>
+  </div>
+  <!-- 検索バー -->
+  <div id="memo-search-bar">
+    <input type="text" id="memo-search-input" placeholder="メモを検索…">
+    <button id="memo-search-clear">×</button>
+  </div>
+  <!-- フォルダタブ行 -->
+  <div id="folder-tab-row">
+    <div id="folder-tabs"></div>
+    <button id="folder-add-btn" title="フォルダを追加">＋</button>
   </div>
   <textarea id="memo-textarea" placeholder="ここにメモを入力…"></textarea>
+  <!-- 検索結果 -->
+  <div id="memo-search-results"></div>
+</div>
+
+<!-- フォルダ編集モーダル -->
+<div id="folder-modal-overlay"></div>
+<div id="folder-modal">
+  <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:14px;" id="folder-modal-title">📁 フォルダ名</div>
+  <input type="text" id="folder-name-input" placeholder="フォルダ名を入力…" maxlength="20">
+  <button id="folder-save-btn" style="width:100%;padding:11px;background:#2a2a2a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">保存</button>
+  <button id="folder-delete-btn" style="width:100%;padding:11px;background:#e05050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:none;">🗑 このフォルダを削除</button>
+  <button id="folder-cancel-btn" style="width:100%;padding:11px;background:none;color:#aaa;border:none;font-size:13px;cursor:pointer;margin-top:2px;">キャンセル</button>
 </div>
 
 <div id="toast">💾 保存しました！</div>
@@ -713,33 +954,248 @@
     }
   }
 
-  // メモ (曜日×AM/PM ごとに保存)
-  let allMemos = Array.from({length:5}, () => ['','']);
+  // ========== メモ＋フォルダ ==========
+  // folderList: [{id, name}] — 全曜日・AM/PM共通
+  // allMemos[d][a]: { folderId: '内容テキスト', ... }
+  let folderList = [{ id: 'default', name: 'メモ' }];
+  let currentFolderId = 'default';
+  let allMemos = Array.from({length:5}, () => Array.from({length:2}, () => ({})));
 
-  function getMemoKey() { return `${currentDay}-${currentAmPm}`; }
+  function genFolderId() { return 'f' + Date.now() + Math.random().toString(36).slice(2,6); }
+
+  // 現在スロットのメモオブジェクト取得
+  function getMemoSlot() {
+    if (!allMemos[currentDay]) allMemos[currentDay] = [null, null];
+    if (!allMemos[currentDay][currentAmPm] || typeof allMemos[currentDay][currentAmPm] !== 'object') {
+      allMemos[currentDay][currentAmPm] = {};
+    }
+    return allMemos[currentDay][currentAmPm];
+  }
 
   function loadMemo() {
-    const ta = document.getElementById('memo-textarea');
-    ta.value = allMemos[currentDay][currentAmPm] || '';
+    const slot = getMemoSlot();
+    document.getElementById('memo-textarea').value = slot[currentFolderId] || '';
   }
 
   function saveMemoState() {
-    allMemos[currentDay][currentAmPm] = document.getElementById('memo-textarea').value;
+    const slot = getMemoSlot();
+    slot[currentFolderId] = document.getElementById('memo-textarea').value;
   }
 
   document.getElementById('memo-textarea').addEventListener('input', saveMemoState);
+
+  // フォルダタブ描画
+  function renderFolderTabs() {
+    const container = document.getElementById('folder-tabs');
+    container.innerHTML = '';
+    folderList.forEach(f => {
+      const btn = document.createElement('button');
+      btn.className = 'folder-tab' + (f.id === currentFolderId ? ' active' : '');
+      btn.textContent = f.name;
+      btn.dataset.id = f.id;
+      btn.addEventListener('click', () => {
+        saveMemoState();
+        currentFolderId = f.id;
+        renderFolderTabs();
+        loadMemo();
+      });
+      // 長押しで編集
+      let pressTimer = null;
+      const startPress = () => { pressTimer = setTimeout(() => openFolderEditModal(f.id), 500); };
+      const endPress = () => { clearTimeout(pressTimer); };
+      btn.addEventListener('mousedown', startPress);
+      btn.addEventListener('mouseup', endPress);
+      btn.addEventListener('mouseleave', endPress);
+      btn.addEventListener('touchstart', startPress, { passive: true });
+      btn.addEventListener('touchend', endPress, { passive: true });
+      container.appendChild(btn);
+    });
+    // 選択タブにスクロール
+    const activeTab = container.querySelector('.folder-tab.active');
+    if (activeTab) activeTab.scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
+  }
+
+  // フォルダ追加・編集モーダル
+  let _editingFolderId = null;
+
+  function openFolderAddModal() {
+    _editingFolderId = null;
+    document.getElementById('folder-modal-title').textContent = '📁 新しいフォルダ';
+    document.getElementById('folder-name-input').value = '';
+    document.getElementById('folder-delete-btn').style.display = 'none';
+    showFolderModal();
+  }
+
+  function openFolderEditModal(id) {
+    const f = folderList.find(f => f.id === id);
+    if (!f) return;
+    _editingFolderId = id;
+    document.getElementById('folder-modal-title').textContent = '📁 フォルダを編集';
+    document.getElementById('folder-name-input').value = f.name;
+    // デフォルトフォルダは削除不可
+    document.getElementById('folder-delete-btn').style.display = (id === 'default') ? 'none' : 'block';
+    showFolderModal();
+  }
+
+  function showFolderModal() {
+    document.getElementById('folder-modal-overlay').style.display = 'block';
+    document.getElementById('folder-modal').style.display = 'block';
+    setTimeout(() => document.getElementById('folder-name-input').focus(), 80);
+  }
+
+  function closeFolderModal() {
+    document.getElementById('folder-modal-overlay').style.display = 'none';
+    document.getElementById('folder-modal').style.display = 'none';
+  }
+
+  document.getElementById('folder-add-btn').addEventListener('click', openFolderAddModal);
+  document.getElementById('folder-modal-overlay').addEventListener('click', closeFolderModal);
+  document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderModal);
+
+  document.getElementById('folder-save-btn').addEventListener('click', () => {
+    const name = document.getElementById('folder-name-input').value.trim();
+    if (!name) { document.getElementById('folder-name-input').focus(); return; }
+    if (_editingFolderId) {
+      // 編集
+      const f = folderList.find(f => f.id === _editingFolderId);
+      if (f) f.name = name;
+    } else {
+      // 新規追加
+      const newId = genFolderId();
+      folderList.push({ id: newId, name: name });
+      saveMemoState();
+      currentFolderId = newId;
+    }
+    closeFolderModal();
+    renderFolderTabs();
+    loadMemo();
+  });
+
+  document.getElementById('folder-delete-btn').addEventListener('click', () => {
+    const f = folderList.find(f => f.id === _editingFolderId);
+    if (!f || f.id === 'default') return;
+    if (!confirm(`「${f.name}」を削除しますか？\nメモの内容もすべて消えます。`)) return;
+    // 全スロットからこのフォルダのメモ削除
+    for (let d = 0; d < 5; d++) for (let a = 0; a < 2; a++) {
+      if (allMemos[d][a] && typeof allMemos[d][a] === 'object') delete allMemos[d][a][_editingFolderId];
+    }
+    folderList = folderList.filter(f => f.id !== _editingFolderId);
+    if (currentFolderId === _editingFolderId) currentFolderId = folderList[0]?.id || 'default';
+    closeFolderModal();
+    renderFolderTabs();
+    loadMemo();
+  });
+
+  // Enterキーで保存
+  document.getElementById('folder-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('folder-save-btn').click();
+    e.stopPropagation();
+  });
+
+  // ========== メモ検索 ==========
+  let _searchOpen = false;
+
+  function openMemoSearch() {
+    _searchOpen = true;
+    const bar = document.getElementById('memo-search-bar');
+    bar.classList.add('open');
+    document.getElementById('folder-tab-row').style.display = 'none';
+    document.getElementById('memo-textarea').style.display = 'none';
+    document.getElementById('memo-search-input').value = '';
+    document.getElementById('memo-search-results').classList.remove('open');
+    document.getElementById('memo-search-results').innerHTML = '';
+    document.getElementById('memo-search-btn').textContent = '✕';
+    setTimeout(() => document.getElementById('memo-search-input').focus(), 80);
+  }
+
+  function closeMemoSearch() {
+    _searchOpen = false;
+    document.getElementById('memo-search-bar').classList.remove('open');
+    document.getElementById('folder-tab-row').style.display = '';
+    document.getElementById('memo-textarea').style.display = '';
+    document.getElementById('memo-search-results').classList.remove('open');
+    document.getElementById('memo-search-results').innerHTML = '';
+    document.getElementById('memo-search-btn').textContent = '🔍';
+  }
+
+  document.getElementById('memo-search-btn').addEventListener('click', () => {
+    _searchOpen ? closeMemoSearch() : openMemoSearch();
+  });
+
+  document.getElementById('memo-search-clear').addEventListener('click', () => {
+    document.getElementById('memo-search-input').value = '';
+    document.getElementById('memo-search-results').classList.remove('open');
+    document.getElementById('memo-search-results').innerHTML = '';
+    document.getElementById('memo-search-input').focus();
+  });
+
+  document.getElementById('memo-search-input').addEventListener('input', function() {
+    const q = this.value.trim();
+    const resultsEl = document.getElementById('memo-search-results');
+    if (!q) {
+      resultsEl.classList.remove('open');
+      resultsEl.innerHTML = '';
+      return;
+    }
+    // 現在のメモを保存してから検索
+    saveMemoState();
+    const slot = getMemoSlot();
+    const lq = q.toLowerCase();
+    const hits = [];
+    folderList.forEach(f => {
+      const text = slot[f.id] || '';
+      const idx = text.toLowerCase().indexOf(lq);
+      if (idx !== -1) {
+        // スニペット生成（前後30文字）
+        const start = Math.max(0, idx - 30);
+        const end = Math.min(text.length, idx + q.length + 30);
+        const before = escapeHtml(text.slice(start, idx));
+        const match  = escapeHtml(text.slice(idx, idx + q.length));
+        const after  = escapeHtml(text.slice(idx + q.length, end));
+        const snippet = (start > 0 ? '…' : '') + before + '<mark>' + match + '</mark>' + after + (end < text.length ? '…' : '');
+        hits.push({ folder: f, snippet, idx });
+      }
+    });
+
+    resultsEl.classList.add('open');
+    if (hits.length === 0) {
+      resultsEl.innerHTML = '<div class="search-no-result">「' + escapeHtml(q) + '」は見つかりませんでした</div>';
+    } else {
+      resultsEl.innerHTML = hits.map(h =>
+        `<div class="search-result-item" data-fid="${h.folder.id}">
+          <div class="search-result-folder">📁 ${escapeHtml(h.folder.name)}</div>
+          <div class="search-result-snippet">${h.snippet}</div>
+        </div>`
+      ).join('');
+      resultsEl.querySelectorAll('.search-result-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const fid = el.dataset.fid;
+          currentFolderId = fid;
+          closeMemoSearch();
+          renderFolderTabs();
+          loadMemo();
+        });
+      });
+    }
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
   // パネル開閉
   const memoPanel = document.getElementById('memo-panel');
   const memoOverlay = document.getElementById('memo-overlay');
 
   function openMemo() {
+    renderFolderTabs();
     loadMemo();
     memoPanel.classList.add('open');
     memoOverlay.classList.add('show');
   }
   function closeMemo() {
     saveMemoState();
+    if (_searchOpen) closeMemoSearch();
     memoPanel.classList.remove('open');
     memoOverlay.classList.remove('show');
   }
@@ -748,7 +1204,7 @@
   document.getElementById('memo-close').addEventListener('click', closeMemo);
   memoOverlay.addEventListener('click', closeMemo);
 
-  // スワイプアップでメモを開く（ボード外の下エリア）
+  // スワイプアップでメモを開く
   let swipeStartY = null;
   document.getElementById('memo-handle').addEventListener('touchstart', e => {
     swipeStartY = e.touches[0].clientY;
@@ -761,12 +1217,12 @@
     }
   }, { passive: true });
 
-  // 保存にメモも含める
+  // 保存にメモ・フォルダも含める
   const _origSaveData = saveData;
   function saveData() {
     saveMemoState();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, folders: folderList }));
       const t = document.getElementById('toast');
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 1800);
@@ -778,17 +1234,22 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        // 新フォーマット
         if (parsed && parsed.seats) {
-          if (Array.isArray(parsed.seats) && parsed.seats.length === 5) {
-            allSeats = parsed.seats;
-          }
+          if (Array.isArray(parsed.seats) && parsed.seats.length === 5) allSeats = parsed.seats;
+          // メモ移行: 旧フォーマット(string) → 新フォーマット(object)
           if (parsed.memos && Array.isArray(parsed.memos) && parsed.memos.length === 5) {
-            allMemos = parsed.memos;
+            allMemos = parsed.memos.map(dayArr =>
+              (dayArr || ['','']).map(slot => {
+                if (typeof slot === 'string') return { default: slot };
+                if (slot && typeof slot === 'object') return slot;
+                return {};
+              })
+            );
           }
-        }
-        // 旧フォーマット（配列直接）
-        else if (Array.isArray(parsed) && parsed.length === 5) {
+          if (parsed.folders && Array.isArray(parsed.folders) && parsed.folders.length > 0) {
+            folderList = parsed.folders;
+          }
+        } else if (Array.isArray(parsed) && parsed.length === 5) {
           allSeats = parsed;
         }
       }
@@ -806,7 +1267,7 @@
       render();
       document.getElementById('memo-panel-title').textContent =
         `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
-      if (memoPanel.classList.contains('open')) loadMemo();
+      if (memoPanel.classList.contains('open')) { renderFolderTabs(); loadMemo(); }
     });
   });
 
@@ -817,7 +1278,7 @@
       render();
       document.getElementById('memo-panel-title').textContent =
         `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
-      if (memoPanel.classList.contains('open')) loadMemo();
+      if (memoPanel.classList.contains('open')) { renderFolderTabs(); loadMemo(); }
     });
   });
 
@@ -925,9 +1386,18 @@
           var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
           if (code && code.data) {
             closeScanner();
-            document.getElementById('day-transfer-text').value = code.data;
+            const scanned = code.data;
+            // メモQRの場合
+            if (scanned.startsWith('MEMO:')) {
+              try {
+                const payload = JSON.parse(decodeURIComponent(escape(atob(scanned.slice(5)))));
+                if (payload && payload.t) { showMemoQrRecvModal(payload); return; }
+              } catch(e) {}
+            }
+            // 座席データQRの場合（従来処理）
+            document.getElementById('method-import-text').value = scanned;
             setTimeout(function() {
-              document.getElementById('day-import-btn').click();
+              document.getElementById('method-import-do-btn').click();
             }, 100);
             return;
           }
@@ -950,7 +1420,7 @@
   }
 
   document.getElementById('scanner-close').addEventListener('click', closeScanner);
-  document.getElementById('day-scan-btn').addEventListener('click', startScanner);
+  document.getElementById('day-scan-btn') && document.getElementById('day-scan-btn').addEventListener('click', startScanner);
 
   // QRコード生成（曜日別のみ）
   function generateQR(data, containerId, areaId) {
@@ -983,17 +1453,6 @@
     return JSON.stringify({ v:5, day:d, ampm:a, s: parts.join('|'), m: allMemos[d][a]||'' });
   }
 
-  document.getElementById('day-qr-btn').addEventListener('click', function() {
-    var val = document.getElementById('day-transfer-target').value.split('-');
-    var d = parseInt(val[0]), a = parseInt(val[1]);
-    var dayNames = ['月','火','水','木','金'];
-    if (!allSeats[d][a]) { alert(dayNames[d]+(a===0?'AM':'PM')+' にデータがありません'); return; }
-    try {
-      var encoded = btoa(unescape(encodeURIComponent(encodeDayData(d, a))));
-      generateQR(encoded, 'day-qr-code', 'day-qr-area');
-    } catch(e) { alert('失敗しました'); }
-  });
-
   // タブ切替
   function switchTransferTab(mode) {
     var isBulk = mode === 'bulk';
@@ -1004,72 +1463,6 @@
     document.getElementById('transfer-bulk-panel').style.display = isBulk ? 'block' : 'none';
     document.getElementById('transfer-day-panel').style.display = isBulk ? 'none' : 'block';
   }
-
-  // 曜日別：送る
-  document.getElementById('day-export-btn').addEventListener('click', function() {
-    var val = document.getElementById('day-transfer-target').value.split('-');
-    var d = parseInt(val[0]), a = parseInt(val[1]);
-    var dayNames = ['月','火','水','木','金'];
-    var label = dayNames[d] + (a===0?'AM':'PM');
-    if (!allSeats[d][a]) { alert(label + ' にデータがありません'); return; }
-    try {
-      var encoded = btoa(unescape(encodeURIComponent(encodeDayData(d, a))));
-      var ta = document.getElementById('day-transfer-text');
-      ta.value = encoded;
-      ta.select();
-      ta.focus();
-      try { document.execCommand('copy'); } catch(e) {}
-      alert(label + ' のデータをテキストエリアに表示しました！\n長押し→「すべて選択」→「コピー」して送ってください。');
-    } catch(e) { alert('失敗しました'); }
-  });
-
-  // 曜日別：受け取る
-  document.getElementById('day-import-btn').addEventListener('click', function() {
-    var text = document.getElementById('day-transfer-text').value.trim();
-    if (!text) { alert('テキストエリアにデータを貼り付けてください'); return; }
-    var val = document.getElementById('day-transfer-target').value.split('-');
-    var toDay = parseInt(val[0]), toAmPm = parseInt(val[1]);
-    var dayNames = ['月','火','水','木','金'];
-    var toLabel = dayNames[toDay] + (toAmPm===0?'AM':'PM');
-    try {
-      var decoded = JSON.parse(decodeURIComponent(escape(atob(text))));
-      if (!decoded) throw new Error();
-      var fromLabel = decoded.day !== undefined ? dayNames[decoded.day] + (decoded.ampm===0?'AM':'PM') : '受信データ';
-      if (!confirm(fromLabel + ' のデータを ' + toLabel + ' に読み込みますか？')) return;
-
-      var b2 = board();
-      var W2 = b2.clientWidth, H2 = b2.clientHeight;
-      var base = makeSeats();
-      if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
-        decoded.s.split('|').forEach(function(p, i) {
-          var seg = p.split(':');
-          var name = seg[0] || '';
-          var colorCode = seg[1] || '0';
-          var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
-          var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
-          var x = rx !== null ? (decoded.v === 5 ? Math.round((rx/99)*W2) : rx) : null;
-          var y = ry !== null ? (decoded.v === 5 ? Math.round((ry/99)*H2) : ry) : null;
-          if (i < base.length) {
-            base[i].name = name;
-            base[i].color = COLOR_LONG[colorCode] || 'default';
-            if (x !== null) base[i].x = x;
-            if (y !== null) base[i].y = y;
-          }
-        });
-        allSeats[toDay][toAmPm] = base;
-        if (decoded.m !== undefined) allMemos[toDay][toAmPm] = decoded.m;
-      } else if (decoded.seats) {
-        allSeats[toDay][toAmPm] = decoded.seats;
-        if (decoded.memo !== undefined) allMemos[toDay][toAmPm] = decoded.memo;
-      } else throw new Error();
-
-      if (toDay === currentDay && toAmPm === currentAmPm) render();
-      document.getElementById('day-transfer-text').value = '';
-      settingsPanel.style.display = 'none';
-      settingsOverlay.style.display = 'none';
-      alert('読み込みました！');
-    } catch(e) { alert('データが正しくありません'); }
-  });
 
   // データを圧縮（名前と色のみ）
   // 色の短縮マップ
@@ -1331,59 +1724,228 @@
     return null;
   }
 
-  // テキストで送る（一括）
-  document.getElementById('export-btn').addEventListener('click', function() {
-    try {
-      for (var d = 0; d < 5; d++) {
-        for (var a = 0; a < 2; a++) {
-          if (!allSeats[d][a]) allSeats[d][a] = makeSeats();
+  // ========== 方法選択モーダル ==========
+  var _methodMode = 'bulk';   // 'bulk' or 'day'
+  var _methodDir  = 'send';   // 'send' or 'recv'
+
+  function openMethodModal(mode, dir) {
+    _methodMode = mode;
+    _methodDir  = dir;
+    var isSend = (dir === 'send');
+    var isBulk = (mode === 'bulk');
+
+    document.getElementById('method-modal-title').textContent = isSend ? '📤 データを送る' : '📥 データを受け取る';
+    document.getElementById('method-modal-subtitle').textContent =
+      isBulk ? '一括（全曜日）のデータ' :
+        (function() {
+          var val = document.getElementById('day-transfer-target').value.split('-');
+          var dn = ['月','火','水','木','金'];
+          return dn[parseInt(val[0])] + (parseInt(val[1])===0?'AM':'PM') + ' のデータ';
+        })();
+
+    // QRボタン: 受け取り時はスキャンラベル、一括はQR非対応
+    var qrBtn = document.getElementById('method-qr-btn');
+    var qrNote = document.getElementById('method-qr-note');
+    if (isBulk) {
+      qrBtn.style.opacity = '0.35';
+      qrBtn.style.pointerEvents = 'none';
+      qrNote.style.display = 'block';
+    } else {
+      qrBtn.style.opacity = '1';
+      qrBtn.style.pointerEvents = '';
+      qrNote.style.display = 'none';
+      qrBtn.innerHTML = isSend
+        ? '<span style="font-size:28px;">📷</span>QRコード'
+        : '<span style="font-size:28px;">📷</span>QRスキャン';
+    }
+
+    showMethodView('select');
+    document.getElementById('method-modal-overlay').style.display = 'block';
+    document.getElementById('method-modal').style.display = 'block';
+  }
+
+  function closeMethodModal() {
+    document.getElementById('method-modal-overlay').style.display = 'none';
+    document.getElementById('method-modal').style.display = 'none';
+  }
+
+  function showMethodView(view) {
+    ['method-select-view','method-text-send-view','method-text-recv-view','method-qr-send-view'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('method-' + view + '-view').style.display = 'block';
+  }
+
+  document.getElementById('method-modal-close').addEventListener('click', closeMethodModal);
+  document.getElementById('method-modal-overlay').addEventListener('click', closeMethodModal);
+
+  // テキストボタン押下
+  document.getElementById('method-text-btn').addEventListener('click', function() {
+    if (_methodDir === 'send') {
+      // エンコードしてテキストエリアに表示
+      try {
+        var encoded;
+        if (_methodMode === 'bulk') {
+          for (var d = 0; d < 5; d++) for (var a = 0; a < 2; a++) { if (!allSeats[d][a]) allSeats[d][a] = makeSeats(); }
+          encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compressData()))));
+        } else {
+          var val = document.getElementById('day-transfer-target').value.split('-');
+          var d2 = parseInt(val[0]), a2 = parseInt(val[1]);
+          if (!allSeats[d2][a2]) { alert('データがありません'); return; }
+          encoded = btoa(unescape(encodeURIComponent(encodeDayData(d2, a2))));
         }
-      }
-      var compressed = compressData();
-      var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compressed))));
-      var ta = document.getElementById('import-text');
-      ta.value = encoded;
-      ta.select();
-      ta.focus();
-      try { document.execCommand('copy'); } catch(e) {}
-      alert('テキストをテキストエリアに表示しました！\n長押し→「すべて選択」→「コピー」してLINEやメールで送ってください。');
-    } catch(e) { alert('失敗しました: ' + e.message); }
+        document.getElementById('method-export-text').value = encoded;
+        showMethodView('text-send');
+        // タイトル更新
+        document.getElementById('method-modal-title').textContent = '📝 テキストで送る';
+      } catch(e) { alert('失敗しました: ' + e.message); }
+    } else {
+      document.getElementById('method-import-text').value = '';
+      showMethodView('text-recv');
+      document.getElementById('method-modal-title').textContent = '📝 テキストで受け取る';
+    }
   });
 
-  // テキストで受け取る
-  document.getElementById('import-btn').addEventListener('click', function() {
-    var text = document.getElementById('import-text').value.trim();
-    if (!text) { alert('テキストエリアにデータを貼り付けてください'); return; }
+  // QRボタン押下
+  document.getElementById('method-qr-btn').addEventListener('click', function() {
+    if (_methodDir === 'send') {
+      try {
+        var val = document.getElementById('day-transfer-target').value.split('-');
+        var d = parseInt(val[0]), a = parseInt(val[1]);
+        if (!allSeats[d][a]) { alert('データがありません'); return; }
+        var encoded = btoa(unescape(encodeURIComponent(encodeDayData(d, a))));
+        document.getElementById('method-qr-code').innerHTML = '';
+        showMethodView('qr-send');
+        document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
+        try {
+          new QRCode(document.getElementById('method-qr-code'), {
+            text: encoded, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L
+          });
+        } catch(e) {
+          document.getElementById('method-qr-code').innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
+        }
+      } catch(e) { alert('失敗しました'); }
+    } else {
+      // QRスキャン
+      closeMethodModal();
+      startScanner();
+    }
+  });
+
+  // コピーボタン
+  document.getElementById('method-copy-btn').addEventListener('click', function() {
+    var ta = document.getElementById('method-export-text');
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.getElementById('method-copy-btn').textContent = '✅ コピーしました！';
+    setTimeout(function() { document.getElementById('method-copy-btn').textContent = '📋 コピーする'; }, 2000);
+  });
+
+  // テキストファイルで保存ボタン
+  document.getElementById('method-download-btn').addEventListener('click', async function() {
+    var text = document.getElementById('method-export-text').value;
+    if (!text) return;
+    var now = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    var filename = '座席データ_' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + '.txt';
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var file = new File([blob], filename, { type: 'text/plain' });
+
+    // Web Share API（ファイル共有対応）が使える場合
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: '座席データ' });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return; // キャンセル
+      }
+    }
+
+    // フォールバック：ダウンロード
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById('method-download-btn').textContent = '✅ 保存しました！';
+    setTimeout(function() { document.getElementById('method-download-btn').textContent = '📄 テキストファイルで保存・共有'; }, 2000);
+  });
+
+  // 読み込むボタン
+  document.getElementById('method-import-do-btn').addEventListener('click', function() {
+    var text = document.getElementById('method-import-text').value.trim();
+    if (!text) { alert('テキストを貼り付けてください'); return; }
     try {
       var decoded = JSON.parse(decodeURIComponent(escape(atob(text))));
       if (!decoded) throw new Error();
-      if (!confirm('受け取ったデータを読み込みますか？\n現在のデータはすべて上書きされます。')) return;
 
-      // v5/v4/v3/v2圧縮フォーマット
-      if ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) {
-        var result = expandData(decoded);
-        if (!result) throw new Error();
-        allSeats = result.seats;
-        allMemos = result.memos;
+      if (_methodMode === 'bulk') {
+        if (!confirm('受け取ったデータを読み込みますか？\n現在のデータはすべて上書きされます。')) return;
+        if ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) {
+          var result = expandData(decoded);
+          if (!result) throw new Error();
+          allSeats = result.seats;
+          allMemos = result.memos;
+        } else if (decoded.seats) {
+          allSeats = decoded.seats;
+          for (var d3 = 0; d3 < 5; d3++) for (var a3 = 0; a3 < 2; a3++) { if (!allSeats[d3][a3]) allSeats[d3][a3] = makeSeats(); }
+          if (decoded.memos) allMemos = decoded.memos;
+        } else throw new Error();
+      } else {
+        var val2 = document.getElementById('day-transfer-target').value.split('-');
+        var toDay = parseInt(val2[0]), toAmPm = parseInt(val2[1]);
+        var dayNames2 = ['月','火','水','木','金'];
+        var toLabel2 = dayNames2[toDay] + (toAmPm===0?'AM':'PM');
+        var fromLabel2 = decoded.day !== undefined ? dayNames2[decoded.day] + (decoded.ampm===0?'AM':'PM') : '受信データ';
+        if (!confirm(fromLabel2 + ' のデータを ' + toLabel2 + ' に読み込みますか？')) return;
+        var b2 = board();
+        var W2 = b2.clientWidth, H2 = b2.clientHeight;
+        var base = makeSeats();
+        if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
+          decoded.s.split('|').forEach(function(p, i) {
+            var seg = p.split(':');
+            var name = seg[0] || '';
+            var colorCode = seg[1] || '0';
+            var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
+            var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
+            var x = rx !== null ? (decoded.v === 5 ? Math.round((rx/99)*W2) : rx) : null;
+            var y = ry !== null ? (decoded.v === 5 ? Math.round((ry/99)*H2) : ry) : null;
+            if (i < base.length) {
+              base[i].name = name;
+              base[i].color = COLOR_LONG[colorCode] || 'default';
+              if (x !== null) base[i].x = x;
+              if (y !== null) base[i].y = y;
+            }
+          });
+          allSeats[toDay][toAmPm] = base;
+          if (decoded.m !== undefined) allMemos[toDay][toAmPm] = decoded.m;
+        } else if (decoded.seats) {
+          allSeats[toDay][toAmPm] = decoded.seats;
+          if (decoded.memo !== undefined) allMemos[toDay][toAmPm] = decoded.memo;
+        } else throw new Error();
+        if (toDay === currentDay && toAmPm === currentAmPm) render();
       }
-      // v1旧フォーマット
-      else if (decoded.seats) {
-        allSeats = decoded.seats;
-        for (var d = 0; d < 5; d++) {
-          for (var a = 0; a < 2; a++) {
-            if (!allSeats[d][a]) allSeats[d][a] = makeSeats();
-          }
-        }
-        if (decoded.memos) allMemos = decoded.memos;
-      } else throw new Error();
 
       render();
-      document.getElementById('import-text').value = '';
+      closeMethodModal();
       settingsPanel.style.display = 'none';
       settingsOverlay.style.display = 'none';
       alert('データを読み込みました！');
     } catch(e) { alert('データが正しくありません。正しいデータを貼り付けてください。'); }
   });
+
+  // テキストで送る（一括）- legacy handler kept for internal use
+  document.getElementById('export-btn').addEventListener('click', function() {});
+  // テキストで受け取る（一括）- legacy handler kept for internal use
+  document.getElementById('import-btn').addEventListener('click', function() {});
+  // hidden import-text for legacy compat
+  var _importTextEl = document.createElement('textarea');
+  _importTextEl.id = 'import-text';
+  _importTextEl.style.display = 'none';
+  document.body.appendChild(_importTextEl);
 
   // 座席数変更
   function updateSeatCountLabel() {
@@ -1429,9 +1991,213 @@
     settingsOverlay.style.display = 'none';
   });
 
+  // ========== メモ共有（QR＋リンク） ==========
+  var _shareLinkData = null;
+  var _pendingMemoQr = null; // QRスキャンで受信したメモペイロード
+
+  function switchShareTab(tab) {
+    ['qr','text','link'].forEach(function(t) {
+      var isActive = t === tab;
+      document.getElementById('share-' + (t==='text'?'text':'') + (t==='qr'?'qr':'') + (t==='link'?'link':'') + '-view').style.display = isActive ? 'block' : 'none';
+      var btn = document.getElementById('share-tab-' + t);
+      btn.style.background   = isActive ? '#2a2a2a' : '#f0ede8';
+      btn.style.color        = isActive ? '#fff'    : '#888';
+      btn.style.borderColor  = isActive ? '#2a2a2a' : '#ddd';
+    });
+    // QRビューはtext-align:center維持
+    if (tab === 'qr') document.getElementById('share-qr-view').style.textAlign = 'center';
+  }
+
+  document.getElementById('memo-share-link-btn').addEventListener('click', function() {
+    saveMemoState();
+    const slot = getMemoSlot();
+    const text = slot[currentFolderId] || '';
+    if (!text.trim()) { alert('メモが空です'); return; }
+    const folder = folderList.find(f => f.id === currentFolderId);
+    const folderName = folder ? folder.name : 'メモ';
+
+    // ペイロード（QR用：コンパクトにMEMO:プレフィックス＋base64）
+    const payload = { v: 1, fn: folderName, t: text };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const qrData  = 'MEMO:' + encoded;
+    const linkUrl = location.href.split('?')[0].split('#')[0] + '?memo=' + encoded;
+
+    const DAY_NAMES_LOCAL = ['月','火','水','木','金'];
+    document.getElementById('share-link-desc').textContent =
+      `📁 ${folderName} ／ ${DAY_NAMES_LOCAL[currentDay]}曜${currentAmPm===0?'AM':'PM'}`;
+
+    // QRコード生成
+    const qrEl = document.getElementById('share-memo-qr');
+    const qrErr = document.getElementById('share-qr-error');
+    qrEl.innerHTML = '';
+    qrErr.style.display = 'none';
+    try {
+      new QRCode(qrEl, { text: qrData, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L });
+    } catch(e) {
+      qrErr.style.display = 'block';
+    }
+
+    // テキスト
+    document.getElementById('share-text-output').value = encoded;
+
+    // リンク
+    document.getElementById('share-link-input').value = linkUrl;
+    _shareLinkData = { url: linkUrl, name: folderName };
+
+    switchShareTab('qr');
+    document.getElementById('share-link-modal-overlay').style.display = 'block';
+    document.getElementById('share-link-modal').style.display = 'block';
+  });
+
+  document.getElementById('share-link-close').addEventListener('click', function() {
+    document.getElementById('share-link-modal-overlay').style.display = 'none';
+    document.getElementById('share-link-modal').style.display = 'none';
+  });
+  document.getElementById('share-link-modal-overlay').addEventListener('click', function() {
+    document.getElementById('share-link-modal-overlay').style.display = 'none';
+    document.getElementById('share-link-modal').style.display = 'none';
+  });
+
+  document.getElementById('share-text-copy-btn').addEventListener('click', function() {
+    var ta = document.getElementById('share-text-output');
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.getElementById('share-text-copy-btn').textContent = '✅ コピーしました！';
+    setTimeout(function() { document.getElementById('share-text-copy-btn').textContent = '📋 コピーする'; }, 2000);
+  });
+
+  document.getElementById('share-text-native-btn').addEventListener('click', async function() {
+    var text = document.getElementById('share-text-output').value;
+    if (!text) return;
+    if (navigator.share) {
+      try { await navigator.share({ text: text }); return; } catch(e) { if (e.name === 'AbortError') return; }
+    }
+    var ta = document.getElementById('share-text-output');
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    alert('テキストをコピーしました！');
+  });
+
+  // 📥 テキストで受け取るシート
+  document.getElementById('memo-recv-text-btn').addEventListener('click', function() {
+    document.getElementById('memo-recv-text-input').value = '';
+    document.getElementById('memo-recv-text-overlay').style.display = 'block';
+    document.getElementById('memo-recv-text-sheet').style.display = 'block';
+    setTimeout(function() { document.getElementById('memo-recv-text-input').focus(); }, 80);
+  });
+
+  function closeMemoRecvTextSheet() {
+    document.getElementById('memo-recv-text-overlay').style.display = 'none';
+    document.getElementById('memo-recv-text-sheet').style.display = 'none';
+  }
+  document.getElementById('memo-recv-text-close').addEventListener('click', closeMemoRecvTextSheet);
+  document.getElementById('memo-recv-text-overlay').addEventListener('click', closeMemoRecvTextSheet);
+
+  document.getElementById('memo-recv-text-do-btn').addEventListener('click', function() {
+    var raw = document.getElementById('memo-recv-text-input').value.trim();
+    if (!raw) { alert('テキストを貼り付けてください'); return; }
+    // MEMO:プレフィックスがある場合は除去
+    var encoded2 = raw.startsWith('MEMO:') ? raw.slice(5) : raw;
+    // URLから?memo=以降を取り出す場合も対応
+    var memoParam = encoded2.match(/[?&]memo=([^&]+)/);
+    if (memoParam) encoded2 = memoParam[1];
+    try {
+      var payload = JSON.parse(decodeURIComponent(escape(atob(encoded2))));
+      if (!payload || !payload.t) throw new Error();
+      closeMemoRecvTextSheet();
+      showMemoQrRecvModal(payload);
+    } catch(e) { alert('正しいテキストを貼り付けてください'); }
+  });
+
+  document.getElementById('share-link-copy-btn').addEventListener('click', function() {
+    const inp = document.getElementById('share-link-input');
+    inp.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.getElementById('share-link-copy-btn').textContent = '✅';
+    setTimeout(function() { document.getElementById('share-link-copy-btn').textContent = 'コピー'; }, 2000);
+  });
+
+  document.getElementById('share-link-share-btn').addEventListener('click', async function() {
+    if (!_shareLinkData) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'メモ共有：' + _shareLinkData.name, url: _shareLinkData.url });
+      } catch(e) { if (e.name !== 'AbortError') alert('共有できませんでした'); }
+    } else {
+      document.getElementById('share-link-input').select();
+      try { document.execCommand('copy'); } catch(e) {}
+      alert('URLをコピーしました！');
+    }
+  });
+
+  // QR受信モーダル
+  function showMemoQrRecvModal(payload) {
+    _pendingMemoQr = payload;
+    const folderName = payload.fn || 'メモ';
+    document.getElementById('memo-qr-recv-desc').textContent =
+      `📁「${folderName}」のメモ（${payload.t.length}文字）を取り込みますか？`;
+    document.getElementById('memo-qr-recv-overlay').style.display = 'block';
+    document.getElementById('memo-qr-recv-modal').style.display = 'block';
+  }
+
+  function closeMemoQrRecvModal() {
+    document.getElementById('memo-qr-recv-overlay').style.display = 'none';
+    document.getElementById('memo-qr-recv-modal').style.display = 'none';
+    _pendingMemoQr = null;
+  }
+
+  function importMemoPayload(payload) {
+    const folderName = payload.fn || 'メモ';
+    let target = folderList.find(f => f.name === folderName);
+    if (!target) {
+      const newId = genFolderId();
+      folderList.push({ id: newId, name: folderName });
+      target = folderList[folderList.length - 1];
+    }
+    const slot = getMemoSlot();
+    slot[target.id] = payload.t;
+    currentFolderId = target.id;
+    renderFolderTabs();
+    loadMemo();
+    openMemo();
+  }
+
+  document.getElementById('memo-qr-recv-accept').addEventListener('click', function() {
+    if (_pendingMemoQr) { importMemoPayload(_pendingMemoQr); closeMemoQrRecvModal(); }
+  });
+  document.getElementById('memo-qr-recv-dismiss').addEventListener('click', closeMemoQrRecvModal);
+  document.getElementById('memo-qr-recv-overlay').addEventListener('click', closeMemoQrRecvModal);
+
+  // ========== 起動時：URLパラメータでメモ受信を検出 ==========
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const memoParam = params.get('memo');
+    if (!memoParam) return;
+    try {
+      const payload = JSON.parse(decodeURIComponent(escape(atob(memoParam))));
+      if (!payload || !payload.t) return;
+      const folderName = payload.fn || 'メモ';
+      document.getElementById('memo-recv-desc').textContent =
+        `📁 「${folderName}」のメモ（${payload.t.length}文字）`;
+      document.getElementById('memo-recv-banner').style.display = 'block';
+
+      document.getElementById('memo-recv-accept').addEventListener('click', function() {
+        importMemoPayload(payload);
+        document.getElementById('memo-recv-banner').style.display = 'none';
+        history.replaceState(null, '', location.pathname);
+      });
+
+      document.getElementById('memo-recv-dismiss').addEventListener('click', function() {
+        document.getElementById('memo-recv-banner').style.display = 'none';
+        history.replaceState(null, '', location.pathname);
+      });
+    } catch(e) {}
+  })();
+
   // 起動
   loadData();
   render();
+  renderFolderTabs();
 
   // 設定パネル開閉
   var settingsPanel = document.getElementById('settings-panel');
