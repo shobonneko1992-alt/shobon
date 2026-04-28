@@ -639,6 +639,18 @@
   <button id="memo-qr-recv-dismiss" style="width:100%;padding:11px;background:none;color:#aaa;border:none;font-size:13px;cursor:pointer;">キャンセル</button>
 </div>
 
+<!-- 重複名前 警告バナー -->
+<div id="dup-warning-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#e05050;color:#fff;padding:12px 16px;z-index:3000;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+  <div style="display:flex;align-items:flex-start;gap:10px;">
+    <span style="font-size:20px;flex-shrink:0;">⚠️</span>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:3px;">同じ名前が複数あります</div>
+      <div id="dup-warning-names" style="font-size:12px;opacity:0.9;line-height:1.6;"></div>
+    </div>
+    <span id="dup-warning-close" style="font-size:22px;opacity:0.7;cursor:pointer;line-height:1;flex-shrink:0;">×</span>
+  </div>
+</div>
+
 <div id="scanner-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;">
   <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;">📷 QRコードを読み取る</div>
   <div style="position:relative;width:280px;height:280px;">
@@ -850,6 +862,8 @@
       span.style.color = seat.name ? c.text : 'rgba(0,0,0,0.25)';
       span.textContent = seat.name || '名前';
       if (input.parentNode) input.replaceWith(span);
+      // 重複チェック
+      if (seat.name) checkDuplicateNames();
     };
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', ev => {
@@ -1182,6 +1196,37 @@
   function escapeHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  // ========== 重複名前チェック ==========
+  var _dupWarningTimer = null;
+
+  function checkDuplicateNames() {
+    const seats = allSeats[currentDay] && allSeats[currentDay][currentAmPm];
+    if (!seats) return;
+    // 空白以外の名前をカウント
+    const counts = {};
+    seats.forEach(function(s) {
+      if (!s.name) return;
+      counts[s.name] = (counts[s.name] || 0) + 1;
+    });
+    const dups = Object.keys(counts).filter(function(n) { return counts[n] > 1; });
+    const banner = document.getElementById('dup-warning-banner');
+    if (dups.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+    const lines = dups.map(function(n) { return `「${n}」が ${counts[n]} か所`; }).join('　／　');
+    document.getElementById('dup-warning-names').textContent = lines;
+    banner.style.display = 'block';
+    // 8秒後に自動で閉じる
+    clearTimeout(_dupWarningTimer);
+    _dupWarningTimer = setTimeout(function() { banner.style.display = 'none'; }, 8000);
+  }
+
+  document.getElementById('dup-warning-close').addEventListener('click', function() {
+    document.getElementById('dup-warning-banner').style.display = 'none';
+    clearTimeout(_dupWarningTimer);
+  });
 
   // パネル開閉
   const memoPanel = document.getElementById('memo-panel');
