@@ -571,12 +571,25 @@
 <div id="memo-recv-text-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1200;"></div>
 <div id="memo-recv-text-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1201;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:15px;font-weight:700;color:#333;">📥 テキストで受け取る</span>
+    <span style="font-size:15px;font-weight:700;color:#333;">📥 メモを受け取る</span>
     <span id="memo-recv-text-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
   </div>
-  <p style="font-size:11px;color:#999;margin-bottom:10px;">送ってもらったテキストを貼り付けてください</p>
-  <textarea id="memo-recv-text-input" placeholder="ここに貼り付け…" style="width:100%;height:80px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;font-family:inherit;"></textarea>
-  <button id="memo-recv-text-do-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
+  <!-- タブ -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button id="memo-recv-tab-text" onclick="switchMemoRecvTab('text')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #2a2a2a;background:#2a2a2a;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">📝 テキスト</button>
+    <button id="memo-recv-tab-qr"   onclick="switchMemoRecvTab('qr')"   style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ddd;background:#f0ede8;color:#888;font-size:13px;font-weight:700;cursor:pointer;">📷 QRスキャン</button>
+  </div>
+  <!-- テキストビュー -->
+  <div id="memo-recv-text-view">
+    <p style="font-size:11px;color:#999;margin-bottom:8px;">送ってもらったテキストを貼り付けてください</p>
+    <textarea id="memo-recv-text-input" placeholder="ここに貼り付け…" style="width:100%;height:80px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;font-family:inherit;"></textarea>
+    <button id="memo-recv-text-do-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
+  </div>
+  <!-- QRビュー -->
+  <div id="memo-recv-qr-view" style="display:none;text-align:center;">
+    <p style="font-size:11px;color:#999;margin-bottom:14px;">相手の共有QRコードをスキャンしてください</p>
+    <button id="memo-recv-qr-start-btn" style="padding:14px 32px;background:#7040b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📷 カメラを起動</button>
+  </div>
 </div>
 
 <!-- 共有リンクモーダル -->
@@ -1453,7 +1466,7 @@
             setTimeout(function() {
               document.getElementById('method-import-do-btn').click();
             }, 100);
-            return;
+            return; // ← tickを止める
           }
         }
         scannerAnimFrame = requestAnimationFrame(tick);
@@ -2133,8 +2146,21 @@
   });
 
   // 📥 テキストで受け取るシート
+  function switchMemoRecvTab(tab) {
+    var isText = tab === 'text';
+    document.getElementById('memo-recv-text-view').style.display = isText ? 'block' : 'none';
+    document.getElementById('memo-recv-qr-view').style.display  = isText ? 'none'  : 'block';
+    document.getElementById('memo-recv-tab-text').style.background  = isText ? '#2a2a2a' : '#f0ede8';
+    document.getElementById('memo-recv-tab-text').style.color       = isText ? '#fff'    : '#888';
+    document.getElementById('memo-recv-tab-text').style.borderColor = isText ? '#2a2a2a' : '#ddd';
+    document.getElementById('memo-recv-tab-qr').style.background    = isText ? '#f0ede8' : '#2a2a2a';
+    document.getElementById('memo-recv-tab-qr').style.color         = isText ? '#888'    : '#fff';
+    document.getElementById('memo-recv-tab-qr').style.borderColor   = isText ? '#ddd'    : '#2a2a2a';
+  }
+
   document.getElementById('memo-recv-text-btn').addEventListener('click', function() {
     document.getElementById('memo-recv-text-input').value = '';
+    switchMemoRecvTab('text');
     document.getElementById('memo-recv-text-overlay').style.display = 'block';
     document.getElementById('memo-recv-text-sheet').style.display = 'block';
     setTimeout(function() { document.getElementById('memo-recv-text-input').focus(); }, 80);
@@ -2146,6 +2172,11 @@
   }
   document.getElementById('memo-recv-text-close').addEventListener('click', closeMemoRecvTextSheet);
   document.getElementById('memo-recv-text-overlay').addEventListener('click', closeMemoRecvTextSheet);
+
+  document.getElementById('memo-recv-qr-start-btn').addEventListener('click', function() {
+    closeMemoRecvTextSheet();
+    startScanner();
+  });
 
   document.getElementById('memo-recv-text-do-btn').addEventListener('click', function() {
     var raw = document.getElementById('memo-recv-text-input').value.trim();
