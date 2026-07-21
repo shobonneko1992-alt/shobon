@@ -441,83 +441,87 @@
   </div>
 
   <!-- コピー -->
-  <div style="border-top:1px solid #eee;padding-top:16px;">
-    <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;">📋 座席データをコピー</div>
-    <div style="font-size:11px;color:#999;margin-bottom:10px;">コピー元の曜日を選んで現在のページに貼り付けます</div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <select id="copy-from" style="flex:1;font-size:12px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;background:#fff;color:#444;">
-        <option value="0-0">月AM</option><option value="0-1">月PM</option>
-        <option value="1-0">火AM</option><option value="1-1">火PM</option>
-        <option value="2-0">水AM</option><option value="2-1">水PM</option>
-        <option value="3-0">木AM</option><option value="3-1">木PM</option>
-        <option value="4-0">金AM</option><option value="4-1">金PM</option>
-      </select>
-      <button id="copy-btn" style="padding:7px 16px;background:#2a6ab8;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">コピー</button>
-    </div>
-  </div>
-
-  <!-- 座席数 -->
-  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:4px;">
-    <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;">🪑 座席数の変更</div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="seat-minus" style="width:36px;height:36px;font-size:20px;background:#eee;border:none;border-radius:6px;cursor:pointer;">－</button>
-      <span id="seat-count-label" style="font-size:16px;font-weight:700;color:#333;min-width:40px;text-align:center;">19</span>
-      <button id="seat-plus" style="width:36px;height:36px;font-size:20px;background:#eee;border:none;border-radius:6px;cursor:pointer;">＋</button>
-      <span style="font-size:11px;color:#999;">現在の曜日に追加・削除</span>
-    </div>
-  </div>
-
-  <!-- データ送受信 -->
-  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:4px;">
-    <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:10px;">📤 データの送受信</div>
-
-    <!-- 一括 / 曜日別 切替 -->
-    <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
-      <button id="transfer-bulk-tab" onclick="switchTransferTab('bulk')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#2a2a2a;color:#fff;">一括</button>
-      <button id="transfer-day-tab" onclick="switchTransferTab('day')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#eee;color:#888;">曜日別</button>
-    </div>
-
-    <!-- 一括パネル -->
-    <div id="transfer-bulk-panel">
-      <div style="display:flex;gap:8px;">
-        <button id="export-btn" onclick="openMethodModal('bulk','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
-        <button id="import-btn" onclick="openMethodModal('bulk','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
-      </div>
-    </div>
-
-    <!-- 曜日別パネル -->
-    <div id="transfer-day-panel" style="display:none;">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-        <span style="font-size:11px;color:#888;">対象：</span>
-        <select id="day-transfer-target" style="flex:1;font-size:12px;border:1px solid #ddd;border-radius:6px;padding:6px;background:#fff;color:#444;">
+  <div style="border-top:1px solid #eee;padding-top:12px;">
+    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-copy')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
+      <span>📋 座席データをコピー</span>
+      <span id="acc-copy-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
+    </button>
+    <div id="acc-copy" style="display:none;padding:12px 2px 4px;">
+      <div style="font-size:11px;color:#999;margin-bottom:10px;">コピー元の曜日を選んで現在のページに貼り付けます</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <select id="copy-from" style="flex:1;font-size:12px;border:1px solid #ddd;border-radius:6px;padding:6px 8px;background:#fff;color:#444;">
           <option value="0-0">月AM</option><option value="0-1">月PM</option>
           <option value="1-0">火AM</option><option value="1-1">火PM</option>
           <option value="2-0">水AM</option><option value="2-1">水PM</option>
           <option value="3-0">木AM</option><option value="3-1">木PM</option>
           <option value="4-0">金AM</option><option value="4-1">金PM</option>
         </select>
+        <button id="copy-btn" style="padding:7px 16px;background:#2a6ab8;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">コピー</button>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button id="day-export-btn" onclick="openMethodModal('day','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
-        <button id="day-import-btn" onclick="openMethodModal('day','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
-      </div>
-      <!-- hidden elements for internal use -->
-      <textarea id="day-transfer-text" style="display:none;"></textarea>
     </div>
   </div>
 
-  <!-- 印刷 -->
-  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:4px;">
-    <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;">🖨️ 印刷</div>
-    <div style="font-size:11px;color:#999;margin-bottom:10px;">月〜金・AM/PM 全10枠の座席表を印刷します</div>
-    <button id="print-btn" style="width:100%;padding:8px;background:#2a2a2a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🖨️ 印刷プレビューを開く</button>
+  <!-- 座席数 -->
+  <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
+    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-seatcount')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
+      <span>🪑 座席数の変更</span>
+      <span id="acc-seatcount-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
+    </button>
+    <div id="acc-seatcount" style="display:none;padding:12px 2px 4px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="seat-minus" style="width:36px;height:36px;font-size:20px;background:#eee;border:none;border-radius:6px;cursor:pointer;">－</button>
+        <span id="seat-count-label" style="font-size:16px;font-weight:700;color:#333;min-width:40px;text-align:center;">19</span>
+        <button id="seat-plus" style="width:36px;height:36px;font-size:20px;background:#eee;border:none;border-radius:6px;cursor:pointer;">＋</button>
+        <span style="font-size:11px;color:#999;">現在の曜日に追加・削除</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- データ送受信 -->
+  <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
+    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-transfer')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
+      <span>📤 データの送受信</span>
+      <span id="acc-transfer-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
+    </button>
+    <div id="acc-transfer" style="display:none;padding:12px 2px 4px;">
+
+      <!-- 一括 / 曜日別 切替 -->
+      <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+        <button id="transfer-bulk-tab" onclick="switchTransferTab('bulk')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#2a2a2a;color:#fff;">一括</button>
+        <button id="transfer-day-tab" onclick="switchTransferTab('day')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#eee;color:#888;">曜日別</button>
+      </div>
+
+      <!-- 一括パネル -->
+      <div id="transfer-bulk-panel">
+        <div style="display:flex;gap:8px;">
+          <button id="export-btn" onclick="openMethodModal('bulk','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+          <button id="import-btn" onclick="openMethodModal('bulk','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
+        </div>
+      </div>
+
+      <!-- 曜日別パネル -->
+      <div id="transfer-day-panel" style="display:none;">
+        <p style="font-size:11px;color:#999;margin-bottom:10px;">「送る」を押すと対象の曜日を選べます。「受け取る」はどのデータでも自動で振り分けます。</p>
+        <div style="display:flex;gap:8px;">
+          <button id="day-export-btn" onclick="openMethodModal('day','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+          <button id="day-import-btn" onclick="openMethodModal('day','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
+        </div>
+        <!-- hidden elements for internal use -->
+        <textarea id="day-transfer-text" style="display:none;"></textarea>
+      </div>
+    </div>
   </div>
 
   <!-- リセット -->
-  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:4px;">
-    <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;">🔄 リセット</div>
-    <div style="font-size:11px;color:#999;margin-bottom:10px;">現在の曜日・AM/PMの座席配置を初期状態に戻します</div>
-    <button id="reset-btn" style="width:100%;padding:8px;background:#e05050;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">リセットする</button>
+  <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
+    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-reset')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
+      <span>🔄 リセット</span>
+      <span id="acc-reset-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
+    </button>
+    <div id="acc-reset" style="display:none;padding:12px 2px 4px;">
+      <div style="font-size:11px;color:#999;margin-bottom:10px;">現在の曜日・AM/PMの座席配置を初期状態に戻します</div>
+      <button id="reset-btn" style="width:100%;padding:8px;background:#e05050;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">リセットする</button>
+    </div>
   </div>
 </div>
 
@@ -531,6 +535,29 @@
     <span id="method-modal-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
   </div>
   <p id="method-modal-subtitle" style="font-size:11px;color:#999;margin-bottom:16px;"></p>
+
+  <!-- 曜日別：送信対象を選ぶ -->
+  <div id="method-day-target-view" style="display:none;">
+    <p style="font-size:12px;color:#666;margin-bottom:10px;">送る対象を選んでください</p>
+    <select id="day-transfer-target" style="width:100%;font-size:13px;border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;color:#444;margin-bottom:14px;">
+      <optgroup label="月">
+        <option value="0-0">月AM</option><option value="0-1">月PM</option><option value="0-2">月（1日分）</option>
+      </optgroup>
+      <optgroup label="火">
+        <option value="1-0">火AM</option><option value="1-1">火PM</option><option value="1-2">火（1日分）</option>
+      </optgroup>
+      <optgroup label="水">
+        <option value="2-0">水AM</option><option value="2-1">水PM</option><option value="2-2">水（1日分）</option>
+      </optgroup>
+      <optgroup label="木">
+        <option value="3-0">木AM</option><option value="3-1">木PM</option><option value="3-2">木（1日分）</option>
+      </optgroup>
+      <optgroup label="金">
+        <option value="4-0">金AM</option><option value="4-1">金PM</option><option value="4-2">金（1日分）</option>
+      </optgroup>
+    </select>
+    <button id="method-day-target-next-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">次へ</button>
+  </div>
 
   <!-- 方法選択ボタン -->
   <div id="method-select-view">
@@ -1359,75 +1386,6 @@
 
   document.getElementById('save-btn').addEventListener('click', saveData);
 
-  // 印刷
-  document.getElementById('print-btn').addEventListener('click', function() {
-    var DAY_NAMES = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
-    var DAY_COLORS = ['#d95050','#d08020','#3a9050','#2a70b8','#7040b8'];
-    var COLOR_BG = { default:'#eef2f7', blue:'#bfd9f5', pink:'#f5c0d0', green:'#b8e8c8', yellow:'#f5e8a0' };
-    var COLOR_TEXT = { default:'#333', blue:'#1a4a7a', pink:'#7a1a3a', green:'#1a5a30', yellow:'#5a4a00' };
-
-    var html = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">';
-    html += '<title>座席レイアウト 印刷</title>';
-    html += '<style>';
-    html += 'body{font-family:"Hiragino Sans","Meiryo",sans-serif;background:#fff;margin:0;padding:10px;}';
-    html += '.page{page-break-after:always;margin-bottom:20px;}';
-    html += '.page:last-child{page-break-after:auto;}';
-    html += '.title{font-size:14px;font-weight:700;padding:6px 10px;color:#fff;border-radius:6px 6px 0 0;margin-bottom:0;}';
-    html += '.board{position:relative;border:2px solid #ddd;background:#fff;';
-    html += 'background-image:radial-gradient(circle,#e0e0e0 1px,transparent 1px);';
-    html += 'background-size:24px 24px;width:100%;height:220px;box-sizing:border-box;}';
-    html += '.seat{position:absolute;width:48px;height:40px;border-radius:6px;border:1.5px solid rgba(0,0,0,0.12);';
-    html += 'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;box-sizing:border-box;}';
-    html += '.memo{font-size:11px;color:#555;border:1px solid #eee;border-top:none;padding:6px 10px;min-height:28px;background:#faf9f6;}';
-    html += '@media print{body{padding:0;}.page{margin:0;page-break-after:always;}}';
-    html += '</style></head><body>';
-
-    for (var d = 0; d < 5; d++) {
-      for (var a = 0; a < 2; a++) {
-        var label = DAY_NAMES[d] + ' ' + (a === 0 ? 'AM' : 'PM');
-        var color = DAY_COLORS[d];
-        var seats = allSeats[d][a];
-        var memo = (allMemos && allMemos[d] && allMemos[d][a]) ? allMemos[d][a] : '';
-
-        html += '<div class="page">';
-        html += '<div class="title" style="background:' + color + ';">' + label + '</div>';
-        html += '<div class="board">';
-
-        if (seats) {
-          // ボードサイズに合わせてスケール
-          var boardW = 400, boardH = 220;
-          seats.forEach(function(seat) {
-            var bg = COLOR_BG[seat.color] || COLOR_BG.default;
-            var tc = COLOR_TEXT[seat.color] || COLOR_TEXT.default;
-            // 元のボードサイズから比率変換
-            var bEl = document.getElementById('board');
-            var rx = boardW / bEl.clientWidth;
-            var ry = boardH / bEl.clientHeight;
-            var x = Math.round(seat.x * rx);
-            var y = Math.round(seat.y * ry);
-            var name = seat.name || '';
-            if (!name) return;
-            html += '<div class="seat" style="left:' + x + 'px;top:' + y + 'px;background:' + bg + ';color:' + tc + ';">' + name + '</div>';
-          });
-        }
-        html += '</div>';
-        if (memo) html += '<div class="memo">📝 ' + memo + '</div>';
-        html += '</div>';
-      }
-    }
-
-    html += '<script>window.onload=function(){window.print();}<\/script>';
-    html += '</body></html>';
-
-    var win = window.open('', '_blank');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-    } else {
-      alert('ポップアップがブロックされています。\nブラウザの設定でポップアップを許可してください。');
-    }
-  });
-
   // QRスキャナー（曜日別のみ）
   var scannerStream = null;
   var scannerAnimFrame = null;
@@ -1508,16 +1466,41 @@
   }
 
   // 曜日別QRコード・テキスト共通エンコード
-  function encodeDayData(d, a) {
-    var b = board();
-    var W = b.clientWidth, H = b.clientHeight;
-    var seats = allSeats[d][a];
-    var parts = seats.map(function(s) {
+  // a=0:AM a=1:PM a=2:1日分(AM+PM まとめて)
+  function seatsToCompactStr(seats, W, H) {
+    return (seats || []).map(function(s) {
       var rx = Math.round((s.x / W) * 99);
       var ry = Math.round((s.y / H) * 99);
       return (s.name||'') + ':' + (COLOR_SHORT[s.color]||'0') + ':' + rx + ':' + ry;
-    });
-    return JSON.stringify({ v:5, day:d, ampm:a, s: parts.join('|'), m: allMemos[d][a]||'' });
+    }).join('|');
+  }
+  function encodeDayData(d, a) {
+    var b = board();
+    var W = b.clientWidth, H = b.clientHeight;
+    if (a === 2) {
+      // 1日分：AM/PMをまとめた軽量フォーマット(v6)
+      return JSON.stringify({
+        v: 6, d: d,
+        s0: seatsToCompactStr(allSeats[d][0], W, H),
+        s1: seatsToCompactStr(allSeats[d][1], W, H),
+        m0: allMemos[d][0] || '',
+        m1: allMemos[d][1] || ''
+      });
+    }
+    var seats = allSeats[d][a];
+    return JSON.stringify({ v:5, day:d, ampm:a, s: seatsToCompactStr(seats, W, H), m: allMemos[d][a]||'' });
+  }
+
+  // 受け取ったテキスト(QR由来の生JSON／コピペ由来のBase64)を判別してデコード
+  function decodePayloadText(text) {
+    var t = (text || '').trim();
+    if (!t) throw new Error('empty');
+    // QRコードは容量節約のため生JSONで送信される
+    if (t.charAt(0) === '{') {
+      try { return JSON.parse(t); } catch(e) { /* フォールスルーしてBase64として試す */ }
+    }
+    // テキスト共有はBase64（従来互換）
+    return JSON.parse(decodeURIComponent(escape(atob(t))));
   }
 
   // タブ切替
@@ -1802,13 +1785,6 @@
     var isBulk = (mode === 'bulk');
 
     document.getElementById('method-modal-title').textContent = isSend ? '📤 データを送る' : '📥 データを受け取る';
-    document.getElementById('method-modal-subtitle').textContent =
-      isBulk ? '一括（全曜日）のデータ' :
-        (function() {
-          var val = document.getElementById('day-transfer-target').value.split('-');
-          var dn = ['月','火','水','木','金'];
-          return dn[parseInt(val[0])] + (parseInt(val[1])===0?'AM':'PM') + ' のデータ';
-        })();
 
     // QRボタン: 受け取り時はスキャンラベル、一括はQR非対応
     var qrBtn = document.getElementById('method-qr-btn');
@@ -1826,7 +1802,16 @@
         : '<span style="font-size:28px;">📷</span>QRスキャン';
     }
 
-    showMethodView('select');
+    if (!isBulk && isSend) {
+      // 曜日別・送信：まず対象（曜日・AM/PM）を選んでもらう
+      document.getElementById('method-modal-subtitle').textContent = '曜日別のデータ';
+      showMethodView('day-target');
+    } else {
+      document.getElementById('method-modal-subtitle').textContent =
+        isBulk ? '一括（全曜日）のデータ' : '曜日別のデータ（送信元の曜日・AM/PMを自動で判定します）';
+      showMethodView('select');
+    }
+
     document.getElementById('method-modal-overlay').style.display = 'block';
     document.getElementById('method-modal').style.display = 'block';
   }
@@ -1837,11 +1822,21 @@
   }
 
   function showMethodView(view) {
-    ['method-select-view','method-text-send-view','method-text-recv-view','method-qr-send-view'].forEach(function(id) {
+    ['method-day-target-view','method-select-view','method-text-send-view','method-text-recv-view','method-qr-send-view'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
     document.getElementById('method-' + view + '-view').style.display = 'block';
   }
+
+  // 曜日別送信：対象決定 →「次へ」
+  document.getElementById('method-day-target-next-btn').addEventListener('click', function() {
+    var val = document.getElementById('day-transfer-target').value.split('-');
+    var dn = ['月','火','水','木','金'];
+    var ap = parseInt(val[1]);
+    var apLabel = ap === 0 ? 'AM' : (ap === 1 ? 'PM' : '（1日分：AM+PM）');
+    document.getElementById('method-modal-subtitle').textContent = dn[parseInt(val[0])] + apLabel + ' のデータ';
+    showMethodView('select');
+  });
 
   document.getElementById('method-modal-close').addEventListener('click', closeMethodModal);
   document.getElementById('method-modal-overlay').addEventListener('click', closeMethodModal);
@@ -1858,7 +1853,9 @@
         } else {
           var val = document.getElementById('day-transfer-target').value.split('-');
           var d2 = parseInt(val[0]), a2 = parseInt(val[1]);
-          if (!allSeats[d2][a2]) { alert('データがありません'); return; }
+          if (a2 === 2) {
+            if (!allSeats[d2][0] && !allSeats[d2][1]) { alert('データがありません'); return; }
+          } else if (!allSeats[d2][a2]) { alert('データがありません'); return; }
           encoded = btoa(unescape(encodeURIComponent(encodeDayData(d2, a2))));
         }
         document.getElementById('method-export-text').value = encoded;
@@ -1879,14 +1876,17 @@
       try {
         var val = document.getElementById('day-transfer-target').value.split('-');
         var d = parseInt(val[0]), a = parseInt(val[1]);
-        if (!allSeats[d][a]) { alert('データがありません'); return; }
-        var encoded = btoa(unescape(encodeURIComponent(encodeDayData(d, a))));
+        if (a === 2) {
+          if (!allSeats[d][0] && !allSeats[d][1]) { alert('データがありません'); return; }
+        } else if (!allSeats[d][a]) { alert('データがありません'); return; }
+        // QRは容量が限られるためBase64化せず生JSONのまま埋め込む（約25%軽量化）
+        var raw = encodeDayData(d, a);
         document.getElementById('method-qr-code').innerHTML = '';
         showMethodView('qr-send');
         document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
         try {
           new QRCode(document.getElementById('method-qr-code'), {
-            text: encoded, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L
+            text: raw, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L
           });
         } catch(e) {
           document.getElementById('method-qr-code').innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
@@ -1946,7 +1946,7 @@
     var text = document.getElementById('method-import-text').value.trim();
     if (!text) { alert('テキストを貼り付けてください'); return; }
     try {
-      var decoded = JSON.parse(decodeURIComponent(escape(atob(text))));
+      var decoded = decodePayloadText(text);
       if (!decoded) throw new Error();
 
       if (_methodMode === 'bulk') {
@@ -1962,38 +1962,66 @@
           if (decoded.memos) allMemos = decoded.memos;
         } else throw new Error();
       } else {
-        var val2 = document.getElementById('day-transfer-target').value.split('-');
-        var toDay = parseInt(val2[0]), toAmPm = parseInt(val2[1]);
+        // 曜日別・受信：対象は選択させず、受信データ自身が持つ曜日・AM/PM情報から自動的に振り分ける
         var dayNames2 = ['月','火','水','木','金'];
-        var toLabel2 = dayNames2[toDay] + (toAmPm===0?'AM':'PM');
-        var fromLabel2 = decoded.day !== undefined ? dayNames2[decoded.day] + (decoded.ampm===0?'AM':'PM') : '受信データ';
-        if (!confirm(fromLabel2 + ' のデータを ' + toLabel2 + ' に読み込みますか？')) return;
+        function apLabel2(ap) { return ap === 0 ? 'AM' : (ap === 1 ? 'PM' : '（1日分）'); }
+
+        var toDay, fromLabel2;
+        if (decoded.v === 6 && decoded.d !== undefined) {
+          toDay = decoded.d;
+          fromLabel2 = dayNames2[toDay] + '（1日分）';
+        } else if (decoded.day !== undefined) {
+          toDay = decoded.day;
+          fromLabel2 = dayNames2[toDay] + apLabel2(decoded.ampm);
+        } else {
+          throw new Error();
+        }
+
+        if (!confirm(fromLabel2 + ' のデータを読み込みますか？')) return;
         var b2 = board();
         var W2 = b2.clientWidth, H2 = b2.clientHeight;
-        var base = makeSeats();
-        if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
-          decoded.s.split('|').forEach(function(p, i) {
-            var seg = p.split(':');
-            var name = seg[0] || '';
-            var colorCode = seg[1] || '0';
-            var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
-            var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
-            var x = rx !== null ? (decoded.v === 5 ? Math.round((rx/99)*W2) : rx) : null;
-            var y = ry !== null ? (decoded.v === 5 ? Math.round((ry/99)*H2) : ry) : null;
-            if (i < base.length) {
-              base[i].name = name;
-              base[i].color = COLOR_LONG[colorCode] || 'default';
-              if (x !== null) base[i].x = x;
-              if (y !== null) base[i].y = y;
-            }
-          });
-          allSeats[toDay][toAmPm] = base;
-          if (decoded.m !== undefined) allMemos[toDay][toAmPm] = decoded.m;
+
+        function buildSeatsFromStr(str, v) {
+          var base = makeSeats();
+          if (str) {
+            str.split('|').forEach(function(p, i) {
+              var seg = p.split(':');
+              var name = seg[0] || '';
+              var colorCode = seg[1] || '0';
+              var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
+              var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
+              var x = rx !== null ? ((v === 5 || v === 6) ? Math.round((rx/99)*W2) : rx) : null;
+              var y = ry !== null ? ((v === 5 || v === 6) ? Math.round((ry/99)*H2) : ry) : null;
+              if (i < base.length) {
+                base[i].name = name;
+                base[i].color = COLOR_LONG[colorCode] || 'default';
+                if (x !== null) base[i].x = x;
+                if (y !== null) base[i].y = y;
+              }
+            });
+          }
+          return base;
+        }
+
+        if (decoded.v === 6 && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
+          // 1日分（AM+PMまとめて）データ
+          allSeats[toDay][0] = buildSeatsFromStr(decoded.s0, 6);
+          allSeats[toDay][1] = buildSeatsFromStr(decoded.s1, 6);
+          allMemos[toDay][0] = decoded.m0 || '';
+          allMemos[toDay][1] = decoded.m1 || '';
+          if (toDay === currentDay) render();
+        } else if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
+          // AM または PM 単体データ
+          var destAmPm = decoded.ampm !== undefined ? decoded.ampm : 0;
+          allSeats[toDay][destAmPm] = buildSeatsFromStr(decoded.s, decoded.v);
+          if (decoded.m !== undefined) allMemos[toDay][destAmPm] = decoded.m;
+          if (toDay === currentDay && destAmPm === currentAmPm) render();
         } else if (decoded.seats) {
-          allSeats[toDay][toAmPm] = decoded.seats;
-          if (decoded.memo !== undefined) allMemos[toDay][toAmPm] = decoded.memo;
+          var destAmPm2 = decoded.ampm !== undefined ? decoded.ampm : 0;
+          allSeats[toDay][destAmPm2] = decoded.seats;
+          if (decoded.memo !== undefined) allMemos[toDay][destAmPm2] = decoded.memo;
+          if (toDay === currentDay) render();
         } else throw new Error();
-        if (toDay === currentDay && toAmPm === currentAmPm) render();
       }
 
       render();
@@ -2287,6 +2315,15 @@
   // 設定パネル開閉
   var settingsPanel = document.getElementById('settings-panel');
   var settingsOverlay = document.getElementById('settings-overlay');
+
+  // アコーディオン開閉（座席データをコピー／データの送受信／リセット）
+  function toggleAccordion(id) {
+    var el = document.getElementById(id);
+    var arrow = document.getElementById(id + '-arrow');
+    var isOpen = el.style.display === 'block';
+    el.style.display = isOpen ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
 
   document.getElementById('settings-btn').addEventListener('click', function() {
     settingsPanel.style.display = 'block';
