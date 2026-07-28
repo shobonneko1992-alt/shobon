@@ -485,29 +485,37 @@
     </button>
     <div id="acc-transfer" style="display:none;padding:12px 2px 4px;">
 
-      <!-- 一括 / 曜日別 切替 -->
-      <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
-        <button id="transfer-bulk-tab" onclick="switchTransferTab('bulk')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#2a2a2a;color:#fff;">一括</button>
-        <button id="transfer-day-tab" onclick="switchTransferTab('day')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#eee;color:#888;">曜日別</button>
-      </div>
-
-      <!-- 一括パネル -->
-      <div id="transfer-bulk-panel">
+      <!-- ステップ1：まず 送る／受け取る を選ぶ -->
+      <div id="transfer-step1">
         <div style="display:flex;gap:8px;">
-          <button id="export-btn" onclick="openMethodModal('bulk','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
-          <button id="import-btn" onclick="openMethodModal('bulk','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
+          <button id="transfer-send-btn" onclick="showTransferStep2('send')" style="flex:1;padding:14px 8px;background:#2a70b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
+          <button id="transfer-recv-btn" onclick="showTransferStep2('recv')" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
         </div>
       </div>
 
-      <!-- 曜日別パネル -->
-      <div id="transfer-day-panel" style="display:none;">
-        <p style="font-size:11px;color:#999;margin-bottom:10px;">「送る」を押すと対象の曜日を選べます。「受け取る」はどのデータでも自動で振り分けます。</p>
-        <div style="display:flex;gap:8px;">
-          <button id="day-export-btn" onclick="openMethodModal('day','send')" style="flex:1;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
-          <button id="day-import-btn" onclick="openMethodModal('day','recv')" style="flex:1;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 受け取る</button>
+      <!-- ステップ2：一括／曜日別を選んで実行 -->
+      <div id="transfer-step2" style="display:none;">
+        <button onclick="showTransferStep1()" style="background:none;border:none;color:#999;font-size:12px;padding:0 0 12px;cursor:pointer;">← 戻る</button>
+        <div id="transfer-step2-title" style="font-size:13px;font-weight:700;color:#444;margin-bottom:10px;"></div>
+
+        <!-- 一括 / 曜日別 切替 -->
+        <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+          <button id="transfer-bulk-tab" onclick="switchTransferTab('bulk')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#2a2a2a;color:#fff;">一括</button>
+          <button id="transfer-day-tab" onclick="switchTransferTab('day')" style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#eee;color:#888;">曜日別</button>
         </div>
-        <!-- hidden elements for internal use -->
-        <textarea id="day-transfer-text" style="display:none;"></textarea>
+
+        <!-- 一括パネル -->
+        <div id="transfer-bulk-panel">
+          <button id="transfer-bulk-go-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+        </div>
+
+        <!-- 曜日別パネル -->
+        <div id="transfer-day-panel" style="display:none;">
+          <p id="transfer-day-note" style="font-size:11px;color:#999;margin-bottom:10px;"></p>
+          <button id="transfer-day-go-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 送る</button>
+          <!-- hidden elements for internal use -->
+          <textarea id="day-transfer-text" style="display:none;"></textarea>
+        </div>
       </div>
     </div>
   </div>
@@ -575,9 +583,9 @@
   <!-- テキスト送る -->
   <div id="method-text-send-view" style="display:none;">
     <textarea id="method-export-text" readonly style="width:100%;height:80px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#555;background:#f5f5f5;margin-bottom:10px;"></textarea>
-    <button id="method-download-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📄 ファイルで送る</button>
-    <a id="method-download-link" style="display:none;width:100%;box-sizing:border-box;padding:10px;background:#eafaf0;color:#227a45;border:1.5px dashed #3a9050;border-radius:8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:8px;">⬇️ ここをタップして保存</a>
-    <p style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.6;">LINEやメールの「ファイルを添付」からそのまま送れます。</p>
+    <button id="method-download-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📤 共有する／ファイルを開く</button>
+    <a id="method-download-link" style="display:none;width:100%;box-sizing:border-box;padding:10px;background:#eafaf0;color:#227a45;border:1.5px dashed #3a9050;border-radius:8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:8px;">⬇️ ここをタップして開く</a>
+    <p style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.6;">共有画面が出ない場合は、開いたページの「⋮」メニューなどから保存・共有してください。</p>
     <button id="method-copy-btn" style="width:100%;padding:9px;background:#eef2f7;color:#2a70b8;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📋 テキストをコピーする（上級者向け）</button>
   </div>
 
@@ -755,7 +763,7 @@
 
 <div id="toast">💾 保存しました！</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 //
@@ -1461,16 +1469,16 @@
     var container = document.getElementById(containerId);
     container.innerHTML = '';
     area.style.display = 'block';
-    try {
-      new QRCode(container, {
-        text: data,
-        width: 220,
-        height: 220,
-        correctLevel: QRCode.CorrectLevel.L
-      });
-    } catch(e) {
-      container.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
-    }
+    QRCode.toDataURL(data, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+      if (err) {
+        container.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
+        return;
+      }
+      var img = document.createElement('img');
+      img.src = url;
+      img.width = 260; img.height = 260;
+      container.appendChild(img);
+    });
   }
 
   // 曜日別QRコード・テキスト共通エンコード
@@ -1540,6 +1548,46 @@
     var decodedStr = decodeURIComponent(escape(atob(t)));
     if (decodedStr.charAt(0) === '~') return parseCompactPayload(decodedStr);
     return JSON.parse(decodedStr);
+  }
+
+  // 送受信フロー：現在選択中の方向（'send' または 'recv'）
+  var _transferDir = 'send';
+
+  // ステップ1（送る／受け取るボタン）を表示
+  function showTransferStep1() {
+    document.getElementById('transfer-step1').style.display = 'block';
+    document.getElementById('transfer-step2').style.display = 'none';
+  }
+
+  // ステップ2（一括／曜日別の詳細）を表示
+  // ※「受け取る」は内容から自動判定するため、一括／曜日別の選択自体が不要 → 直接モーダルへ
+  function showTransferStep2(dir) {
+    _transferDir = dir;
+
+    if (dir === 'recv') {
+      openMethodModal('auto', 'recv');
+      return;
+    }
+
+    var isSend = true;
+    document.getElementById('transfer-step1').style.display = 'none';
+    document.getElementById('transfer-step2').style.display = 'block';
+    document.getElementById('transfer-step2-title').textContent = '📤 データを送る';
+
+    var color = '#2a70b8';
+    var label = '📤 送る';
+    var bulkBtn = document.getElementById('transfer-bulk-go-btn');
+    var dayBtn = document.getElementById('transfer-day-go-btn');
+    bulkBtn.textContent = label;
+    bulkBtn.style.background = color;
+    bulkBtn.onclick = function() { openMethodModal('bulk', dir); };
+    dayBtn.textContent = label;
+    dayBtn.style.background = color;
+    dayBtn.onclick = function() { openMethodModal('day', dir); };
+
+    document.getElementById('transfer-day-note').textContent = '「送る」を押すと対象の曜日を選べます。';
+
+    switchTransferTab('bulk');
   }
 
   // タブ切替
@@ -1822,13 +1870,14 @@
     _methodDir  = dir;
     var isSend = (dir === 'send');
     var isBulk = (mode === 'bulk');
+    var isAuto = (mode === 'auto'); // 受信時：一括／曜日別をデータから自動判定
 
     document.getElementById('method-modal-title').textContent = isSend ? '📤 データを送る' : '📥 データを受け取る';
 
-    // QRボタン: 受け取り時はスキャンラベル、一括はQR非対応
+    // QRボタン: 生成が重くなる「一括の送信」のときだけ無効化。受信は常にスキャン可能。
     var qrBtn = document.getElementById('method-qr-btn');
     var qrNote = document.getElementById('method-qr-note');
-    if (isBulk) {
+    if (isBulk && isSend) {
       qrBtn.style.opacity = '0.35';
       qrBtn.style.pointerEvents = 'none';
       qrNote.style.display = 'block';
@@ -1841,12 +1890,13 @@
         : '<span style="font-size:28px;">📷</span>QRスキャン';
     }
 
-    if (!isBulk && isSend) {
+    if (!isBulk && !isAuto && isSend) {
       // 曜日別・送信：まず対象（曜日・AM/PM）を選んでもらう
       document.getElementById('method-modal-subtitle').textContent = '曜日別のデータ';
       showMethodView('day-target');
     } else {
       document.getElementById('method-modal-subtitle').textContent =
+        isAuto ? '受け取ったデータの内容を自動で判定します' :
         isBulk ? '一括（全曜日）のデータ' : '曜日別のデータ（送信元の曜日・AM/PMを自動で判定します）';
       showMethodView('select');
     }
@@ -1920,18 +1970,23 @@
         if (a === 2) {
           if (!allSeats[d][0] && !allSeats[d][1]) { alert('データがありません'); return; }
         } else if (!allSeats[d][a]) { alert('データがありません'); return; }
-        // QRは容量が限られるためBase64化せず生JSONのまま埋め込む（約25%軽量化）
+        // QRは容量が限られるためBase64化せず生データのまま埋め込む
         var raw = encodeDayData(d, a);
-        document.getElementById('method-qr-code').innerHTML = '';
+        document.getElementById('method-qr-code').innerHTML = '<p style="font-size:11px;color:#999;">生成中…</p>';
         showMethodView('qr-send');
         document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
-        try {
-          new QRCode(document.getElementById('method-qr-code'), {
-            text: raw, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L
-          });
-        } catch(e) {
-          document.getElementById('method-qr-code').innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
-        }
+        QRCode.toDataURL(raw, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+          var qrContainer = document.getElementById('method-qr-code');
+          if (err) {
+            qrContainer.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
+            return;
+          }
+          qrContainer.innerHTML = '';
+          var img = document.createElement('img');
+          img.src = url;
+          img.width = 260; img.height = 260;
+          qrContainer.appendChild(img);
+        });
       } catch(e) { alert('失敗しました'); }
     } else {
       // QRスキャン
@@ -1957,37 +2012,43 @@
     var now = new Date();
     var pad = function(n) { return String(n).padStart(2, '0'); };
     var filename = '座席データ_' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + '.txt';
-    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    var file = new File([blob], filename, { type: 'text/plain' });
 
     // Web Share API（ファイル共有対応）が使える場合はこちらを優先
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.canShare) {
       try {
-        await navigator.share({ files: [file], title: '座席データ' });
-        return;
+        var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        var file = new File([blob], filename, { type: 'text/plain' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: '座席データ' });
+          return;
+        }
       } catch(e) {
         if (e.name === 'AbortError') return; // キャンセル
-        // 共有に失敗した場合は下の手動保存リンクにフォールバック
+        // 共有に失敗した場合は下のフォールバックへ
       }
     }
 
-    // フォールバック：JSによる自動クリックは端末によって不安定なため、
-    // ユーザー自身がタップする保存リンクを表示する
-    if (_lastDownloadUrl) URL.revokeObjectURL(_lastDownloadUrl);
-    var url = URL.createObjectURL(blob);
-    _lastDownloadUrl = url;
+    // フォールバック：端末のダウンロード機能は不安定な場合があるため使わず、
+    // 新しいタブにテキストとして開く（そこから端末標準の共有・保存を使ってもらう）
+    var dataUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+    var win = window.open(dataUri, '_blank');
     var link = document.getElementById('method-download-link');
-    link.href = url;
-    link.download = filename;
-    link.style.display = 'block';
-    document.getElementById('method-download-btn').style.display = 'none';
+    if (!win) {
+      // ポップアップがブロックされた場合はリンクをタップしてもらう
+      link.href = dataUri;
+      link.removeAttribute('download');
+      link.style.display = 'block';
+      document.getElementById('method-download-btn').style.display = 'none';
+    } else {
+      link.style.display = 'none';
+    }
   });
 
-  // 手動保存リンクをタップした後のフィードバック
+  // 手動リンクをタップした後のフィードバック
   document.getElementById('method-download-link').addEventListener('click', function() {
     var link = document.getElementById('method-download-link');
     setTimeout(function() {
-      link.textContent = '✅ 保存しました！';
+      link.textContent = '✅ 開きました。長押しで保存・共有できます';
     }, 300);
   });
 
@@ -2018,7 +2079,11 @@
       var decoded = decodePayloadText(text);
       if (!decoded) throw new Error();
 
-      if (_methodMode === 'bulk') {
+      // 受信データ自体の内容から「一括」か「曜日別」かを自動判定する
+      // （一括：'c'圧縮形式 or 'seats'構造を持つ／曜日別：day・d・ampmなどを持つ）
+      var isBulkData = ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) || decoded.seats;
+
+      if (isBulkData) {
         if (!confirm('受け取ったデータを読み込みますか？\n現在のデータはすべて上書きされます。')) return;
         if ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) {
           var result = expandData(decoded);
@@ -2128,10 +2193,6 @@
     } catch(e) { alert('データが正しくありません。正しいデータを貼り付けてください。'); }
   });
 
-  // テキストで送る（一括）- legacy handler kept for internal use
-  document.getElementById('export-btn').addEventListener('click', function() {});
-  // テキストで受け取る（一括）- legacy handler kept for internal use
-  document.getElementById('import-btn').addEventListener('click', function() {});
   // hidden import-text for legacy compat
   var _importTextEl = document.createElement('textarea');
   _importTextEl.id = 'import-text';
@@ -2222,11 +2283,16 @@
     const qrErr = document.getElementById('share-qr-error');
     qrEl.innerHTML = '';
     qrErr.style.display = 'none';
-    try {
-      new QRCode(qrEl, { text: qrData, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L });
-    } catch(e) {
-      qrErr.style.display = 'block';
-    }
+    QRCode.toDataURL(qrData, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+      if (err) {
+        qrErr.style.display = 'block';
+        return;
+      }
+      var img = document.createElement('img');
+      img.src = url;
+      img.width = 260; img.height = 260;
+      qrEl.appendChild(img);
+    });
 
     // テキスト
     document.getElementById('share-text-output').value = encoded;
@@ -2419,6 +2485,9 @@
     var isOpen = el.style.display === 'block';
     el.style.display = isOpen ? 'none' : 'block';
     if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    if (id === 'acc-transfer' && isOpen === false && typeof showTransferStep1 === 'function') {
+      showTransferStep1(); // 開くたびにステップ1（送る／受け取る選択）に戻す
+    }
   }
 
   document.getElementById('settings-btn').addEventListener('click', function() {
