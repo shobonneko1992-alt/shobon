@@ -763,8 +763,8 @@
 
 <div id="toast">💾 保存しました！</div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
 <script>
 //
   const SEAT_COUNT = 19;
@@ -1463,20 +1463,34 @@
   document.getElementById('scanner-close').addEventListener('click', closeScanner);
   document.getElementById('day-scan-btn') && document.getElementById('day-scan-btn').addEventListener('click', startScanner);
 
+  // QRコード生成ヘルパー（qrcode-generator ライブラリ／Type1〜40自動対応）
+  // dataUrlをコールバックで返す（同期処理だが既存コードとの互換のためコールバック形式のまま）
+  function makeQrDataUrl(text, cb) {
+    try {
+      var qr = qrcode(0, 'L'); // typeNumber=0で自動選択、誤り訂正レベルL
+      qr.addData(text);
+      qr.make();
+      var dataUrl = qr.createDataURL(6, 4);
+      cb(null, dataUrl);
+    } catch (e) {
+      cb(e);
+    }
+  }
+
   // QRコード生成（曜日別のみ）
   function generateQR(data, containerId, areaId) {
     var area = document.getElementById(areaId);
     var container = document.getElementById(containerId);
     container.innerHTML = '';
     area.style.display = 'block';
-    QRCode.toDataURL(data, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+    makeQrDataUrl(data, function(err, url) {
       if (err) {
         container.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
         return;
       }
       var img = document.createElement('img');
       img.src = url;
-      img.width = 260; img.height = 260;
+      img.style.width = '260px'; img.style.height = '260px';
       container.appendChild(img);
     });
   }
@@ -1975,7 +1989,7 @@
         document.getElementById('method-qr-code').innerHTML = '<p style="font-size:11px;color:#999;">生成中…</p>';
         showMethodView('qr-send');
         document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
-        QRCode.toDataURL(raw, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+        makeQrDataUrl(raw, function(err, url) {
           var qrContainer = document.getElementById('method-qr-code');
           if (err) {
             qrContainer.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
@@ -1984,10 +1998,10 @@
           qrContainer.innerHTML = '';
           var img = document.createElement('img');
           img.src = url;
-          img.width = 260; img.height = 260;
+          img.style.width = '260px'; img.style.height = '260px';
           qrContainer.appendChild(img);
         });
-      } catch(e) { alert('失敗しました'); }
+      } catch(e) { alert('失敗しました: ' + (e && e.message ? e.message : e)); }
     } else {
       // QRスキャン
       closeMethodModal();
@@ -2283,14 +2297,14 @@
     const qrErr = document.getElementById('share-qr-error');
     qrEl.innerHTML = '';
     qrErr.style.display = 'none';
-    QRCode.toDataURL(qrData, { errorCorrectionLevel: 'L', margin: 1, width: 260 }, function(err, url) {
+    makeQrDataUrl(qrData, function(err, url) {
       if (err) {
         qrErr.style.display = 'block';
         return;
       }
       var img = document.createElement('img');
       img.src = url;
-      img.width = 260; img.height = 260;
+      img.style.width = '260px'; img.style.height = '260px';
       qrEl.appendChild(img);
     });
 
