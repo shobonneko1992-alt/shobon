@@ -575,14 +575,22 @@
   <!-- テキスト送る -->
   <div id="method-text-send-view" style="display:none;">
     <textarea id="method-export-text" readonly style="width:100%;height:80px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#555;background:#f5f5f5;margin-bottom:10px;"></textarea>
-    <p style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6;">テキストエリアを長押し →「すべて選択」→「コピー」してLINEやメールで送ってください。</p>
-    <button id="method-copy-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📋 コピーする</button>
-    <button id="method-download-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📄 テキストファイルで保存・共有</button>
+    <button id="method-download-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📄 ファイルで送る</button>
+    <a id="method-download-link" style="display:none;width:100%;box-sizing:border-box;padding:10px;background:#eafaf0;color:#227a45;border:1.5px dashed #3a9050;border-radius:8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:8px;">⬇️ ここをタップして保存</a>
+    <p style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.6;">LINEやメールの「ファイルを添付」からそのまま送れます。</p>
+    <button id="method-copy-btn" style="width:100%;padding:9px;background:#eef2f7;color:#2a70b8;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📋 テキストをコピーする（上級者向け）</button>
   </div>
 
   <!-- テキスト受け取る -->
   <div id="method-text-recv-view" style="display:none;">
-    <textarea id="method-import-text" placeholder="受け取ったテキストをここに貼り付け…" style="width:100%;height:80px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;"></textarea>
+    <input type="file" id="method-import-file" accept=".txt,text/plain" style="display:none;">
+    <button id="method-import-file-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">📄 ファイルを選んで読み込む</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;height:1px;background:#eee;"></div>
+      <span style="font-size:10px;color:#bbb;">またはテキストを貼り付け</span>
+      <div style="flex:1;height:1px;background:#eee;"></div>
+    </div>
+    <textarea id="method-import-text" placeholder="受け取ったテキストをここに貼り付け…" style="width:100%;height:60px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;"></textarea>
     <button id="method-import-do-btn" style="width:100%;padding:10px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📥 読み込む</button>
   </div>
 
@@ -1467,40 +1475,71 @@
 
   // 曜日別QRコード・テキスト共通エンコード
   // a=0:AM a=1:PM a=2:1日分(AM+PM まとめて)
-  function seatsToCompactStr(seats, W, H) {
-    return (seats || []).map(function(s) {
+  // データが入っている席（名前あり or 色が既定色以外）だけを送ることで大幅に軽量化する
+  var UNIT_SEP = '\u001f'; // ほぼ絶対に本文に含まれない制御文字を区切りに使う
+  function seatsToSparseStr(seats, W, H) {
+    var parts = [];
+    (seats || []).forEach(function(s, i) {
+      if (!s) return;
+      var hasName = !!s.name;
+      var hasColor = s.color && s.color !== 'default';
+      if (!hasName && !hasColor) return; // 空席はスキップ（データ量削減）
       var rx = Math.round((s.x / W) * 99);
       var ry = Math.round((s.y / H) * 99);
-      return (s.name||'') + ':' + (COLOR_SHORT[s.color]||'0') + ':' + rx + ':' + ry;
-    }).join('|');
+      parts.push(i + ':' + (s.name || '') + ':' + (COLOR_SHORT[s.color] || '0') + ':' + rx + ':' + ry);
+    });
+    return parts.join('|');
   }
   function encodeDayData(d, a) {
     var b = board();
     var W = b.clientWidth, H = b.clientHeight;
     if (a === 2) {
-      // 1日分：AM/PMをまとめた軽量フォーマット(v6)
-      return JSON.stringify({
-        v: 6, d: d,
-        s0: seatsToCompactStr(allSeats[d][0], W, H),
-        s1: seatsToCompactStr(allSeats[d][1], W, H),
-        m0: allMemos[d][0] || '',
-        m1: allMemos[d][1] || ''
-      });
+      // 1日分：AM/PMをまとめた軽量フォーマット(v8, 非JSON・スパース)
+      return '~8' + d + UNIT_SEP +
+        seatsToSparseStr(allSeats[d][0], W, H) + UNIT_SEP +
+        seatsToSparseStr(allSeats[d][1], W, H) + UNIT_SEP +
+        (allMemos[d][0] || '') + UNIT_SEP +
+        (allMemos[d][1] || '');
     }
     var seats = allSeats[d][a];
-    return JSON.stringify({ v:5, day:d, ampm:a, s: seatsToCompactStr(seats, W, H), m: allMemos[d][a]||'' });
+    return '~7' + d + a + UNIT_SEP + seatsToSparseStr(seats, W, H) + UNIT_SEP + (allMemos[d][a] || '');
   }
 
-  // 受け取ったテキスト(QR由来の生JSON／コピペ由来のBase64)を判別してデコード
+  // 新形式(~7 / ~8)の文字列をデコードして、旧形式と同じ構造のオブジェクトに変換
+  function parseCompactPayload(t) {
+    var body = t.slice(1); // 先頭の '~' を除去
+    var ver = body.charAt(0);
+    var parts = body.slice(1).split(UNIT_SEP);
+    if (ver === '7') {
+      // "day" + "ampm" + US + s + US + m
+      var head = parts[0];
+      var day = parseInt(head.charAt(0));
+      var ampm = parseInt(head.charAt(1));
+      return { v: 7, day: day, ampm: ampm, s: parts[1] || '', m: parts[2] !== undefined ? parts[2] : '' };
+    }
+    if (ver === '8') {
+      var d = parseInt(parts[0]);
+      return { v: 8, d: d, s0: parts[1] || '', s1: parts[2] || '', m0: parts[3] || '', m1: parts[4] || '' };
+    }
+    throw new Error('unknown compact version');
+  }
+
+  // 受け取ったテキスト(QR由来の生データ／コピペ由来のBase64)を判別してデコード
   function decodePayloadText(text) {
     var t = (text || '').trim();
     if (!t) throw new Error('empty');
-    // QRコードは容量節約のため生JSONで送信される
+    // 新形式：'~' 始まりは非JSON・スパース圧縮の生データ（QRはこの形式を直接埋め込む）
+    if (t.charAt(0) === '~') {
+      return parseCompactPayload(t);
+    }
+    // 旧形式：QRコードは容量節約のため生JSONで送信されていた
     if (t.charAt(0) === '{') {
       try { return JSON.parse(t); } catch(e) { /* フォールスルーしてBase64として試す */ }
     }
-    // テキスト共有はBase64（従来互換）
-    return JSON.parse(decodeURIComponent(escape(atob(t))));
+    // テキスト共有はBase64
+    var decodedStr = decodeURIComponent(escape(atob(t)));
+    if (decodedStr.charAt(0) === '~') return parseCompactPayload(decodedStr);
+    return JSON.parse(decodedStr);
   }
 
   // タブ切替
@@ -1859,6 +1898,8 @@
           encoded = btoa(unescape(encodeURIComponent(encodeDayData(d2, a2))));
         }
         document.getElementById('method-export-text').value = encoded;
+        document.getElementById('method-download-link').style.display = 'none';
+        document.getElementById('method-download-btn').style.display = 'block';
         showMethodView('text-send');
         // タイトル更新
         document.getElementById('method-modal-title').textContent = '📝 テキストで送る';
@@ -1909,6 +1950,7 @@
   });
 
   // テキストファイルで保存ボタン
+  var _lastDownloadUrl = null;
   document.getElementById('method-download-btn').addEventListener('click', async function() {
     var text = document.getElementById('method-export-text').value;
     if (!text) return;
@@ -1918,27 +1960,54 @@
     var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     var file = new File([blob], filename, { type: 'text/plain' });
 
-    // Web Share API（ファイル共有対応）が使える場合
+    // Web Share API（ファイル共有対応）が使える場合はこちらを優先
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: '座席データ' });
         return;
       } catch(e) {
         if (e.name === 'AbortError') return; // キャンセル
+        // 共有に失敗した場合は下の手動保存リンクにフォールバック
       }
     }
 
-    // フォールバック：ダウンロード
+    // フォールバック：JSによる自動クリックは端末によって不安定なため、
+    // ユーザー自身がタップする保存リンクを表示する
+    if (_lastDownloadUrl) URL.revokeObjectURL(_lastDownloadUrl);
     var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    document.getElementById('method-download-btn').textContent = '✅ 保存しました！';
-    setTimeout(function() { document.getElementById('method-download-btn').textContent = '📄 テキストファイルで保存・共有'; }, 2000);
+    _lastDownloadUrl = url;
+    var link = document.getElementById('method-download-link');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'block';
+    document.getElementById('method-download-btn').style.display = 'none';
+  });
+
+  // 手動保存リンクをタップした後のフィードバック
+  document.getElementById('method-download-link').addEventListener('click', function() {
+    var link = document.getElementById('method-download-link');
+    setTimeout(function() {
+      link.textContent = '✅ 保存しました！';
+    }, 300);
+  });
+
+  // ファイルを選んで読み込む
+  document.getElementById('method-import-file-btn').addEventListener('click', function() {
+    document.getElementById('method-import-file').click();
+  });
+  document.getElementById('method-import-file').addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      document.getElementById('method-import-text').value = ev.target.result;
+      document.getElementById('method-import-file').value = '';
+      document.getElementById('method-import-do-btn').click();
+    };
+    reader.onerror = function() {
+      alert('ファイルの読み込みに失敗しました');
+    };
+    reader.readAsText(file, 'UTF-8');
   });
 
   // 読み込むボタン
@@ -1967,7 +2036,7 @@
         function apLabel2(ap) { return ap === 0 ? 'AM' : (ap === 1 ? 'PM' : '（1日分）'); }
 
         var toDay, fromLabel2;
-        if (decoded.v === 6 && decoded.d !== undefined) {
+        if ((decoded.v === 6 || decoded.v === 8) && decoded.d !== undefined) {
           toDay = decoded.d;
           fromLabel2 = dayNames2[toDay] + '（1日分）';
         } else if (decoded.day !== undefined) {
@@ -2003,13 +2072,40 @@
           return base;
         }
 
-        if (decoded.v === 6 && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
+        // v7/v8：スパース形式（"idx:name:color:rx:ry" のみを持つ席の一覧）
+        function buildSeatsFromSparseStr(str) {
+          var base = makeSeats();
+          if (str) {
+            str.split('|').forEach(function(p) {
+              var seg = p.split(':');
+              var i = parseInt(seg[0]);
+              if (isNaN(i) || i < 0 || i >= base.length) return;
+              var name = seg[1] || '';
+              var colorCode = seg[2] || '0';
+              var rx = seg[3] !== undefined ? parseInt(seg[3]) : null;
+              var ry = seg[4] !== undefined ? parseInt(seg[4]) : null;
+              base[i].name = name;
+              base[i].color = COLOR_LONG[colorCode] || 'default';
+              if (rx !== null) base[i].x = Math.round((rx / 99) * W2);
+              if (ry !== null) base[i].y = Math.round((ry / 99) * H2);
+            });
+          }
+          return base;
+        }
+
+        if ((decoded.v === 6 || decoded.v === 8) && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
           // 1日分（AM+PMまとめて）データ
-          allSeats[toDay][0] = buildSeatsFromStr(decoded.s0, 6);
-          allSeats[toDay][1] = buildSeatsFromStr(decoded.s1, 6);
+          allSeats[toDay][0] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s0) : buildSeatsFromStr(decoded.s0, 6);
+          allSeats[toDay][1] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s1) : buildSeatsFromStr(decoded.s1, 6);
           allMemos[toDay][0] = decoded.m0 || '';
           allMemos[toDay][1] = decoded.m1 || '';
           if (toDay === currentDay) render();
+        } else if (decoded.v === 7 && decoded.s !== undefined) {
+          // AM または PM 単体データ（スパース形式）
+          var destAmPm7 = decoded.ampm !== undefined ? decoded.ampm : 0;
+          allSeats[toDay][destAmPm7] = buildSeatsFromSparseStr(decoded.s);
+          if (decoded.m !== undefined) allMemos[toDay][destAmPm7] = decoded.m;
+          if (toDay === currentDay && destAmPm7 === currentAmPm) render();
         } else if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
           // AM または PM 単体データ
           var destAmPm = decoded.ampm !== undefined ? decoded.ampm : 0;
