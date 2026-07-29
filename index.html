@@ -605,7 +605,7 @@
   <!-- QR送る -->
   <div id="method-qr-send-view" style="display:none;text-align:center;">
     <p style="font-size:11px;color:#888;margin-bottom:10px;">相手のスマホで読み取ってください</p>
-    <div id="method-qr-code" style="display:inline-block;"></div>
+    <div id="method-qr-code" style="display:block;width:100%;"></div>
   </div>
 </div>
 
@@ -654,7 +654,7 @@
   <!-- QRビュー -->
   <div id="share-qr-view" style="text-align:center;">
     <p style="font-size:11px;color:#aaa;margin-bottom:10px;">相手のアプリのQRスキャンで読み取れます</p>
-    <div id="share-memo-qr" style="display:inline-block;margin-bottom:10px;"></div>
+    <div id="share-memo-qr" style="display:block;width:100%;margin-bottom:10px;"></div>
     <p id="share-qr-error" style="display:none;font-size:12px;color:#e05050;">データが大きすぎます。<br>テキストタブをお使いください。</p>
   </div>
 
@@ -1417,11 +1417,14 @@
         if (payload && payload.t) { showMemoQrRecvModal(payload); return; }
       } catch(e) {}
     }
-    // 座席データQRの場合（従来処理）
+    // 座席データQRの場合：自動で読み込まず、まずテキストとして表示して確認できるようにする
+    // （内容を確認してから自分で「読み込む」を押す。一括データの上書き前確認にも使える）
+    document.getElementById('method-modal-title').textContent = '📥 データを受け取る';
+    document.getElementById('method-modal-subtitle').textContent = 'QRコードから読み取った内容です。内容を確認して「読み込む」を押してください。';
+    document.getElementById('method-modal-overlay').style.display = 'block';
+    document.getElementById('method-modal').style.display = 'block';
+    showMethodView('text-recv');
     document.getElementById('method-import-text').value = scanned;
-    setTimeout(function() {
-      document.getElementById('method-import-do-btn').click();
-    }, 100);
   }
 
   function startScanner() {
@@ -1529,7 +1532,7 @@
     }
   }
 
-  // マス目数に応じて、読み取りやすい表示サイズと注意書きを決める
+  // マス目数に応じて、読み取りやすい表示サイズ（上限）と注意書きを決める
   // マス目が多い（データが多い）ほど画面上で大きく表示し、カメラが認識しやすくする
   function qrDisplaySettings(moduleCount) {
     if (moduleCount <= 33) {
@@ -1541,6 +1544,74 @@
     } else {
       return { size: 340, warn: true };   // それ以上：かなり密。強めに注意
     }
+  }
+
+  // 画面幅からはみ出さないよう、img要素はmax-width指定のレスポンシブにする
+  // (固定pxで指定するとモーダル幅より大きい場合に枠からはみ出してズレて見えてしまうため)
+  function applyQrImageStyle(img, maxSizePx) {
+    img.style.display = 'block';
+    img.style.width = '100%';
+    img.style.height = 'auto';
+    img.style.maxWidth = maxSizePx + 'px';
+    img.style.margin = '0 auto';
+  }
+
+  // 1日分（AM+PM）のQRコードを「AM用」「PM用」の2枚に分割して表示する
+  // 1枚あたりのデータ量が半分になり、マス目が減って読み取りやすくなる
+  function renderSplitDayQr(d) {
+    var qrContainer = document.getElementById('method-qr-code');
+    qrContainer.innerHTML = '';
+
+    var tabWrap = document.createElement('div');
+    tabWrap.style.cssText = 'display:flex;gap:0;margin-bottom:14px;border:1px solid #ddd;border-radius:6px;overflow:hidden;';
+    var amTab = document.createElement('button');
+    amTab.textContent = '☀️ AM用';
+    amTab.style.cssText = 'flex:1;padding:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#2a2a2a;color:#fff;';
+    var pmTab = document.createElement('button');
+    pmTab.textContent = '🌙 PM用';
+    pmTab.style.cssText = 'flex:1;padding:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#eee;color:#888;';
+    tabWrap.appendChild(amTab);
+    tabWrap.appendChild(pmTab);
+    qrContainer.appendChild(tabWrap);
+
+    var note = document.createElement('p');
+    note.style.cssText = 'font-size:11px;color:#888;margin-bottom:10px;';
+    note.textContent = 'まずAM用を見せて読み取ってもらい、続けてPM用も読み取ってもらってください。';
+    qrContainer.appendChild(note);
+
+    var qrArea = document.createElement('div');
+    qrContainer.appendChild(qrArea);
+
+    function renderHalf(ampm) {
+      amTab.style.background = ampm === 0 ? '#2a2a2a' : '#eee';
+      amTab.style.color = ampm === 0 ? '#fff' : '#888';
+      pmTab.style.background = ampm === 1 ? '#2a2a2a' : '#eee';
+      pmTab.style.color = ampm === 1 ? '#fff' : '#888';
+      qrArea.innerHTML = '<p style="font-size:11px;color:#999;">生成中…</p>';
+      var raw = encodeDayData(d, ampm);
+      makeQrDataUrl(raw, function(err, url, moduleCount) {
+        if (err) {
+          qrArea.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
+          return;
+        }
+        var s = qrDisplaySettings(moduleCount);
+        qrArea.innerHTML = '';
+        var img = document.createElement('img');
+        img.src = url;
+        applyQrImageStyle(img, s.size);
+        qrArea.appendChild(img);
+        if (s.warn) {
+          var p = document.createElement('p');
+          p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
+          p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
+          qrArea.appendChild(p);
+        }
+      });
+    }
+
+    amTab.onclick = function() { renderHalf(0); };
+    pmTab.onclick = function() { renderHalf(1); };
+    renderHalf(0);
   }
 
   // QRコード生成（曜日別のみ）
@@ -1557,7 +1628,7 @@
       var s = qrDisplaySettings(moduleCount);
       var img = document.createElement('img');
       img.src = url;
-      img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
+      applyQrImageStyle(img, s.size);
       container.appendChild(img);
       if (s.warn) {
         var p = document.createElement('p');
@@ -2101,29 +2172,35 @@
           if (!allSeats[d][0] && !allSeats[d][1]) { alert('データがありません'); return; }
         } else if (!allSeats[d][a]) { alert('データがありません'); return; }
         // QRは容量が限られるためBase64化せず生データのまま埋め込む
-        var raw = encodeDayData(d, a);
         document.getElementById('method-qr-code').innerHTML = '<p style="font-size:11px;color:#999;">生成中…</p>';
         showMethodView('qr-send');
         document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
-        makeQrDataUrl(raw, function(err, url, moduleCount) {
-          var qrContainer = document.getElementById('method-qr-code');
-          if (err) {
-            qrContainer.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
-            return;
-          }
-          var s = qrDisplaySettings(moduleCount);
-          qrContainer.innerHTML = '';
-          var img = document.createElement('img');
-          img.src = url;
-          img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
-          qrContainer.appendChild(img);
-          if (s.warn) {
-            var p = document.createElement('p');
-            p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
-            p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
-            qrContainer.appendChild(p);
-          }
-        });
+
+        if (a === 2) {
+          // 1日分は「AM用」「PM用」の2枚に分けて表示（1枚あたりのデータ量を半分にして読み取りやすくする）
+          renderSplitDayQr(d);
+        } else {
+          var raw = encodeDayData(d, a);
+          makeQrDataUrl(raw, function(err, url, moduleCount) {
+            var qrContainer = document.getElementById('method-qr-code');
+            if (err) {
+              qrContainer.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
+              return;
+            }
+            var s = qrDisplaySettings(moduleCount);
+            qrContainer.innerHTML = '';
+            var img = document.createElement('img');
+            img.src = url;
+            applyQrImageStyle(img, s.size);
+            qrContainer.appendChild(img);
+            if (s.warn) {
+              var p = document.createElement('p');
+              p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
+              p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
+              qrContainer.appendChild(p);
+            }
+          });
+        }
       } catch(e) { alert('失敗しました: ' + (e && e.message ? e.message : e)); }
     } else {
       // QRスキャン
@@ -2439,7 +2516,7 @@
       var s = qrDisplaySettings(moduleCount);
       var img = document.createElement('img');
       img.src = url;
-      img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
+      applyQrImageStyle(img, s.size);
       qrEl.appendChild(img);
       if (s.warn) {
         var p = document.createElement('p');
