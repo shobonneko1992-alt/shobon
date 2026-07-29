@@ -716,7 +716,9 @@
     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160px;height:160px;border:2px dashed rgba(255,255,255,0.5);border-radius:4px;pointer-events:none;"></div>
   </div>
   <div style="color:#aaa;font-size:12px;margin-top:12px;">QRコードを枠内に合わせてください</div>
-  <button id="scanner-close" style="margin-top:18px;padding:10px 36px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
+  <input type="file" id="scanner-file-input" accept="image/*" style="display:none;">
+  <button id="scanner-file-btn" style="margin-top:16px;padding:10px 24px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖼️ 画像ファイルから読み取る</button>
+  <button id="scanner-close" style="margin-top:10px;padding:10px 36px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
 </div>
 
 <!-- メモハンドル -->
@@ -1406,12 +1408,30 @@
   var scannerStream = null;
   var scannerAnimFrame = null;
 
+  // QRコードの中身を読み取れた時の共通処理（カメラ・画像ファイル共通）
+  function handleScannedText(scanned) {
+    // メモQRの場合
+    if (scanned.startsWith('MEMO:')) {
+      try {
+        const payload = JSON.parse(decodeURIComponent(escape(atob(scanned.slice(5)))));
+        if (payload && payload.t) { showMemoQrRecvModal(payload); return; }
+      } catch(e) {}
+    }
+    // 座席データQRの場合（従来処理）
+    document.getElementById('method-import-text').value = scanned;
+    setTimeout(function() {
+      document.getElementById('method-import-do-btn').click();
+    }, 100);
+  }
+
   function startScanner() {
     var modal = document.getElementById('scanner-modal');
     modal.style.display = 'flex';
+    var existingHint = document.getElementById('scanner-camera-error-hint');
+    if (existingHint) existingHint.remove();
     var video = document.getElementById('scanner-video');
     navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 640 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
     }).then(function(stream) {
       scannerStream = stream;
       video.srcObject = stream;
@@ -1427,29 +1447,57 @@
           var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
           if (code && code.data) {
             closeScanner();
-            const scanned = code.data;
-            // メモQRの場合
-            if (scanned.startsWith('MEMO:')) {
-              try {
-                const payload = JSON.parse(decodeURIComponent(escape(atob(scanned.slice(5)))));
-                if (payload && payload.t) { showMemoQrRecvModal(payload); return; }
-              } catch(e) {}
-            }
-            // 座席データQRの場合（従来処理）
-            document.getElementById('method-import-text').value = scanned;
-            setTimeout(function() {
-              document.getElementById('method-import-do-btn').click();
-            }, 100);
+            handleScannedText(code.data);
             return; // ← tickを止める
           }
         }
         scannerAnimFrame = requestAnimationFrame(tick);
       });
     }).catch(function() {
-      alert('カメラを起動できませんでした。\nブラウザのカメラ許可を確認してください。');
-      closeScanner();
+      var hint = document.createElement('div');
+      hint.id = 'scanner-camera-error-hint';
+      hint.style.cssText = 'color:#f0a0a0;font-size:12px;margin-top:8px;text-align:center;max-width:260px;';
+      hint.textContent = 'カメラを起動できませんでした。画像ファイルから読み取ることもできます。';
+      document.getElementById('scanner-modal').insertBefore(hint, document.getElementById('scanner-file-btn'));
     });
   }
+
+  // 画像ファイルからQRコードを読み取る
+  document.getElementById('scanner-file-btn').addEventListener('click', function() {
+    document.getElementById('scanner-file-input').click();
+  });
+  document.getElementById('scanner-file-input').addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    document.getElementById('scanner-file-input').value = '';
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var image = new Image();
+      image.onload = function() {
+        var canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+        if (code && code.data) {
+          closeScanner();
+          handleScannedText(code.data);
+        } else {
+          alert('この画像からQRコードを読み取れませんでした。\n別の画像でお試しください。');
+        }
+      };
+      image.onerror = function() {
+        alert('画像の読み込みに失敗しました。');
+      };
+      image.src = ev.target.result;
+    };
+    reader.onerror = function() {
+      alert('ファイルの読み込みに失敗しました。');
+    };
+    reader.readAsDataURL(file);
+  });
 
   function closeScanner() {
     if (scannerStream) {
@@ -1457,6 +1505,8 @@
       scannerStream = null;
     }
     if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
+    var hint = document.getElementById('scanner-camera-error-hint');
+    if (hint) hint.remove();
     document.getElementById('scanner-modal').style.display = 'none';
   }
 
@@ -1465,15 +1515,31 @@
 
   // QRコード生成ヘルパー（qrcode-generator ライブラリ／Type1〜40自動対応）
   // dataUrlをコールバックで返す（同期処理だが既存コードとの互換のためコールバック形式のまま）
+  // moduleCount（マス目の数）も返すので、読み取りにくさの目安として利用できる
   function makeQrDataUrl(text, cb) {
     try {
       var qr = qrcode(0, 'L'); // typeNumber=0で自動選択、誤り訂正レベルL
       qr.addData(text);
       qr.make();
+      var moduleCount = qr.getModuleCount();
       var dataUrl = qr.createDataURL(6, 4);
-      cb(null, dataUrl);
+      cb(null, dataUrl, moduleCount);
     } catch (e) {
       cb(e);
+    }
+  }
+
+  // マス目数に応じて、読み取りやすい表示サイズと注意書きを決める
+  // マス目が多い（データが多い）ほど画面上で大きく表示し、カメラが認識しやすくする
+  function qrDisplaySettings(moduleCount) {
+    if (moduleCount <= 33) {
+      return { size: 260, warn: false };  // Type1〜4程度：問題なし
+    } else if (moduleCount <= 57) {
+      return { size: 300, warn: false };  // Type5〜10程度：やや大きめ表示
+    } else if (moduleCount <= 97) {
+      return { size: 320, warn: true };   // Type11〜18程度：注意書きを出す
+    } else {
+      return { size: 340, warn: true };   // それ以上：かなり密。強めに注意
     }
   }
 
@@ -1483,15 +1549,22 @@
     var container = document.getElementById(containerId);
     container.innerHTML = '';
     area.style.display = 'block';
-    makeQrDataUrl(data, function(err, url) {
+    makeQrDataUrl(data, function(err, url, moduleCount) {
       if (err) {
         container.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
         return;
       }
+      var s = qrDisplaySettings(moduleCount);
       var img = document.createElement('img');
       img.src = url;
-      img.style.width = '260px'; img.style.height = '260px';
+      img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
       container.appendChild(img);
+      if (s.warn) {
+        var p = document.createElement('p');
+        p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
+        p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
+        container.appendChild(p);
+      }
     });
   }
 
@@ -1499,6 +1572,8 @@
   // a=0:AM a=1:PM a=2:1日分(AM+PM まとめて)
   // データが入っている席（名前あり or 色が既定色以外）だけを送ることで大幅に軽量化する
   var UNIT_SEP = '\u001f'; // ほぼ絶対に本文に含まれない制御文字を区切りに使う
+
+  // 旧・スパース形式（idx:name:color:rx:ry）… v7/v8 用、後方互換のため残す
   function seatsToSparseStr(seats, W, H) {
     var parts = [];
     (seats || []).forEach(function(s, i) {
@@ -1512,36 +1587,77 @@
     });
     return parts.join('|');
   }
+
+  // 新・超圧縮形式：座標／席番号／色をすべて36進数1文字に固定し、区切り文字(:)を最小限にする
+  // "idx36:name:色1文字+x1文字+y1文字" … 従来より2〜4割ほど軽量
+  function seatsToCompact2Str(seats, W, H) {
+    var parts = [];
+    (seats || []).forEach(function(s, i) {
+      if (!s) return;
+      var hasName = !!s.name;
+      var hasColor = s.color && s.color !== 'default';
+      if (!hasName && !hasColor) return; // 空席はスキップ
+      var rx = Math.round((s.x / W) * 35).toString(36);   // 0-35 → 36進数1文字
+      var ry = Math.round((s.y / H) * 35).toString(36);
+      var idx36 = i.toString(36);
+      var color = COLOR_SHORT[s.color] || '0';
+      parts.push(idx36 + ':' + (s.name || '') + ':' + color + rx + ry);
+    });
+    return parts.join('|');
+  }
+  function buildSeatsFromCompact2Str(str, W, H) {
+    var base = makeSeats();
+    if (str) {
+      str.split('|').forEach(function(p) {
+        var firstColon = p.indexOf(':');
+        var lastColon = p.lastIndexOf(':');
+        if (firstColon < 0 || lastColon <= firstColon) return;
+        var idx = parseInt(p.slice(0, firstColon), 36);
+        var name = p.slice(firstColon + 1, lastColon);
+        var tail = p.slice(lastColon + 1); // 色1文字 + x1文字 + y1文字
+        if (isNaN(idx) || idx < 0 || idx >= base.length || tail.length < 3) return;
+        var color = tail.charAt(0);
+        var rx = parseInt(tail.charAt(1), 36);
+        var ry = parseInt(tail.charAt(2), 36);
+        base[idx].name = name;
+        base[idx].color = COLOR_LONG[color] || 'default';
+        if (!isNaN(rx)) base[idx].x = Math.round((rx / 35) * W);
+        if (!isNaN(ry)) base[idx].y = Math.round((ry / 35) * H);
+      });
+    }
+    return base;
+  }
+
   function encodeDayData(d, a) {
     var b = board();
     var W = b.clientWidth, H = b.clientHeight;
     if (a === 2) {
-      // 1日分：AM/PMをまとめた軽量フォーマット(v8, 非JSON・スパース)
-      return '~8' + d + UNIT_SEP +
-        seatsToSparseStr(allSeats[d][0], W, H) + UNIT_SEP +
-        seatsToSparseStr(allSeats[d][1], W, H) + UNIT_SEP +
+      // 1日分：AM/PMをまとめた最軽量フォーマット(vA, 超圧縮)
+      return '~A' + d + UNIT_SEP +
+        seatsToCompact2Str(allSeats[d][0], W, H) + UNIT_SEP +
+        seatsToCompact2Str(allSeats[d][1], W, H) + UNIT_SEP +
         (allMemos[d][0] || '') + UNIT_SEP +
         (allMemos[d][1] || '');
     }
     var seats = allSeats[d][a];
-    return '~7' + d + a + UNIT_SEP + seatsToSparseStr(seats, W, H) + UNIT_SEP + (allMemos[d][a] || '');
+    return '~9' + d + a + UNIT_SEP + seatsToCompact2Str(seats, W, H) + UNIT_SEP + (allMemos[d][a] || '');
   }
 
-  // 新形式(~7 / ~8)の文字列をデコードして、旧形式と同じ構造のオブジェクトに変換
+  // 新形式(~7/~8/~9/~A)の文字列をデコードして、旧形式と同じ構造のオブジェクトに変換
   function parseCompactPayload(t) {
     var body = t.slice(1); // 先頭の '~' を除去
     var ver = body.charAt(0);
     var parts = body.slice(1).split(UNIT_SEP);
-    if (ver === '7') {
+    if (ver === '7' || ver === '9') {
       // "day" + "ampm" + US + s + US + m
       var head = parts[0];
       var day = parseInt(head.charAt(0));
       var ampm = parseInt(head.charAt(1));
-      return { v: 7, day: day, ampm: ampm, s: parts[1] || '', m: parts[2] !== undefined ? parts[2] : '' };
+      return { v: (ver === '9' ? 9 : 7), day: day, ampm: ampm, s: parts[1] || '', m: parts[2] !== undefined ? parts[2] : '' };
     }
-    if (ver === '8') {
+    if (ver === '8' || ver === 'A') {
       var d = parseInt(parts[0]);
-      return { v: 8, d: d, s0: parts[1] || '', s1: parts[2] || '', m0: parts[3] || '', m1: parts[4] || '' };
+      return { v: (ver === 'A' ? 10 : 8), d: d, s0: parts[1] || '', s1: parts[2] || '', m0: parts[3] || '', m1: parts[4] || '' };
     }
     throw new Error('unknown compact version');
   }
@@ -1989,17 +2105,24 @@
         document.getElementById('method-qr-code').innerHTML = '<p style="font-size:11px;color:#999;">生成中…</p>';
         showMethodView('qr-send');
         document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
-        makeQrDataUrl(raw, function(err, url) {
+        makeQrDataUrl(raw, function(err, url, moduleCount) {
           var qrContainer = document.getElementById('method-qr-code');
           if (err) {
             qrContainer.innerHTML = '<p style="color:red;font-size:12px;">データが大きすぎてQRコードにできません。<br>テキストで送ってください。</p>';
             return;
           }
+          var s = qrDisplaySettings(moduleCount);
           qrContainer.innerHTML = '';
           var img = document.createElement('img');
           img.src = url;
-          img.style.width = '260px'; img.style.height = '260px';
+          img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
           qrContainer.appendChild(img);
+          if (s.warn) {
+            var p = document.createElement('p');
+            p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
+            p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
+            qrContainer.appendChild(p);
+          }
         });
       } catch(e) { alert('失敗しました: ' + (e && e.message ? e.message : e)); }
     } else {
@@ -2115,7 +2238,7 @@
         function apLabel2(ap) { return ap === 0 ? 'AM' : (ap === 1 ? 'PM' : '（1日分）'); }
 
         var toDay, fromLabel2;
-        if ((decoded.v === 6 || decoded.v === 8) && decoded.d !== undefined) {
+        if ((decoded.v === 6 || decoded.v === 8 || decoded.v === 10) && decoded.d !== undefined) {
           toDay = decoded.d;
           fromLabel2 = dayNames2[toDay] + '（1日分）';
         } else if (decoded.day !== undefined) {
@@ -2172,13 +2295,24 @@
           return base;
         }
 
-        if ((decoded.v === 6 || decoded.v === 8) && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
+        if ((decoded.v === 6 || decoded.v === 8 || decoded.v === 10) && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
           // 1日分（AM+PMまとめて）データ
-          allSeats[toDay][0] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s0) : buildSeatsFromStr(decoded.s0, 6);
-          allSeats[toDay][1] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s1) : buildSeatsFromStr(decoded.s1, 6);
+          if (decoded.v === 10) {
+            allSeats[toDay][0] = buildSeatsFromCompact2Str(decoded.s0, W2, H2);
+            allSeats[toDay][1] = buildSeatsFromCompact2Str(decoded.s1, W2, H2);
+          } else {
+            allSeats[toDay][0] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s0) : buildSeatsFromStr(decoded.s0, 6);
+            allSeats[toDay][1] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s1) : buildSeatsFromStr(decoded.s1, 6);
+          }
           allMemos[toDay][0] = decoded.m0 || '';
           allMemos[toDay][1] = decoded.m1 || '';
           if (toDay === currentDay) render();
+        } else if (decoded.v === 9 && decoded.s !== undefined) {
+          // AM または PM 単体データ（超圧縮形式）
+          var destAmPm9 = decoded.ampm !== undefined ? decoded.ampm : 0;
+          allSeats[toDay][destAmPm9] = buildSeatsFromCompact2Str(decoded.s, W2, H2);
+          if (decoded.m !== undefined) allMemos[toDay][destAmPm9] = decoded.m;
+          if (toDay === currentDay && destAmPm9 === currentAmPm) render();
         } else if (decoded.v === 7 && decoded.s !== undefined) {
           // AM または PM 単体データ（スパース形式）
           var destAmPm7 = decoded.ampm !== undefined ? decoded.ampm : 0;
@@ -2297,15 +2431,22 @@
     const qrErr = document.getElementById('share-qr-error');
     qrEl.innerHTML = '';
     qrErr.style.display = 'none';
-    makeQrDataUrl(qrData, function(err, url) {
+    makeQrDataUrl(qrData, function(err, url, moduleCount) {
       if (err) {
         qrErr.style.display = 'block';
         return;
       }
+      var s = qrDisplaySettings(moduleCount);
       var img = document.createElement('img');
       img.src = url;
-      img.style.width = '260px'; img.style.height = '260px';
+      img.style.width = s.size + 'px'; img.style.height = s.size + 'px';
       qrEl.appendChild(img);
+      if (s.warn) {
+        var p = document.createElement('p');
+        p.style.cssText = 'font-size:11px;color:#c07000;margin-top:8px;text-align:center;';
+        p.textContent = 'データ量が多く、読み取りにくい場合があります。画面を明るくし、カメラを近づけてお試しください。';
+        qrEl.appendChild(p);
+      }
     });
 
     // テキスト
