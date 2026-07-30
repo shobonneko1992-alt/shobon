@@ -721,6 +721,45 @@
   <button id="scanner-close" style="margin-top:10px;padding:10px 36px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
 </div>
 
+<!-- 画像トリミングモーダル -->
+<div id="crop-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:520;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+
+  <!-- ステップ1：範囲選択 -->
+  <div id="crop-select-view">
+    <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:10px;text-align:center;">✂️ QRコードの範囲を指定</div>
+    <div style="color:#aaa;font-size:11px;margin-bottom:12px;text-align:center;">四隅をドラッグして範囲を調整してください</div>
+    <div id="crop-stage" style="position:relative;touch-action:none;max-width:100%;">
+      <img id="crop-image" style="display:block;max-width:100%;user-select:none;-webkit-user-drag:none;">
+      <div id="crop-box" style="position:absolute;border:2px solid #3a9050;box-shadow:0 0 0 2000px rgba(0,0,0,0.55);box-sizing:border-box;touch-action:none;">
+        <div class="crop-handle" data-corner="tl" style="position:absolute;width:26px;height:26px;left:-13px;top:-13px;background:#3a9050;border-radius:50%;touch-action:none;"></div>
+        <div class="crop-handle" data-corner="tr" style="position:absolute;width:26px;height:26px;right:-13px;top:-13px;background:#3a9050;border-radius:50%;touch-action:none;"></div>
+        <div class="crop-handle" data-corner="bl" style="position:absolute;width:26px;height:26px;left:-13px;bottom:-13px;background:#3a9050;border-radius:50%;touch-action:none;"></div>
+        <div class="crop-handle" data-corner="br" style="position:absolute;width:26px;height:26px;right:-13px;bottom:-13px;background:#3a9050;border-radius:50%;touch-action:none;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;width:100%;max-width:320px;">
+      <button id="crop-full-btn" style="flex:1;padding:10px;background:#555;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">画像全体で読み取る</button>
+      <button id="crop-confirm-btn" style="flex:1;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✅ トリミング完了</button>
+    </div>
+    <button id="crop-cancel-btn" style="margin-top:10px;padding:10px 36px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
+  </div>
+
+  <!-- ステップ2：切り取った画像のプレビュー -->
+  <div id="crop-preview-view" style="display:none;flex-direction:column;align-items:center;">
+    <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:10px;text-align:center;">切り取った画像を確認</div>
+    <div style="color:#aaa;font-size:11px;margin-bottom:12px;text-align:center;">この画像でよければ「読み込む」を押してください</div>
+    <div style="background:#fff;padding:8px;border-radius:8px;max-width:100%;">
+      <img id="crop-preview-image" style="display:block;max-width:100%;max-height:50vh;">
+    </div>
+    <div id="crop-error" style="display:none;color:#ff8080;font-size:12px;margin-top:12px;text-align:center;">この画像からQRコードを読み取れませんでした。範囲を選び直してお試しください。</div>
+    <div style="display:flex;gap:8px;margin-top:16px;width:100%;max-width:320px;">
+      <button id="crop-back-btn" style="flex:1;padding:10px;background:#555;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">← 範囲を選び直す</button>
+      <button id="crop-read-btn" style="flex:1;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🔍 この画像を読み込む</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- メモハンドル -->
 <div id="memo-handle">
   <div class="handle-bar"></div>
@@ -1477,19 +1516,7 @@
     reader.onload = function(ev) {
       var image = new Image();
       image.onload = function() {
-        var canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0);
-        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        var code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
-        if (code && code.data) {
-          closeScanner();
-          handleScannedText(code.data);
-        } else {
-          alert('この画像からQRコードを読み取れませんでした。\n別の画像でお試しください。');
-        }
+        openCropModal(image);
       };
       image.onerror = function() {
         alert('画像の読み込みに失敗しました。');
@@ -1501,6 +1528,188 @@
     };
     reader.readAsDataURL(file);
   });
+
+  // ---- 画像トリミング機能 ----
+  var _cropImage = null;       // 読み込んだ元画像（Imageオブジェクト）
+  var _cropDisplayScale = 1;   // 表示サイズ ÷ 元画像サイズ の倍率
+  var _cropBoxRect = null;     // { left, top, width, height }（表示座標系・px）
+  var _cropDrag = null;        // ドラッグ中の状態
+
+  function openCropModal(image) {
+    _cropImage = image;
+    document.getElementById('crop-error').style.display = 'none';
+    var imgEl = document.getElementById('crop-image');
+    imgEl.src = image.src;
+    document.getElementById('crop-modal').style.display = 'flex';
+    showCropView('select');
+
+    // 画像の表示サイズが確定してから初期トリミング範囲を設定する
+    requestAnimationFrame(function() {
+      var displayedW = imgEl.clientWidth;
+      var displayedH = imgEl.clientHeight;
+      _cropDisplayScale = displayedW / image.naturalWidth;
+      // 初期値：画像中央80%を選択範囲にする
+      var w = displayedW * 0.8, h = displayedH * 0.8;
+      _cropBoxRect = { left: (displayedW - w) / 2, top: (displayedH - h) / 2, width: w, height: h };
+      updateCropBoxUI();
+    });
+  }
+
+  function showCropView(view) {
+    document.getElementById('crop-select-view').style.display = view === 'select' ? 'block' : 'none';
+    document.getElementById('crop-preview-view').style.display = view === 'preview' ? 'flex' : 'none';
+  }
+
+  function updateCropBoxUI() {
+    var box = document.getElementById('crop-box');
+    box.style.left = _cropBoxRect.left + 'px';
+    box.style.top = _cropBoxRect.top + 'px';
+    box.style.width = _cropBoxRect.width + 'px';
+    box.style.height = _cropBoxRect.height + 'px';
+  }
+
+  function closeCropModal() {
+    document.getElementById('crop-modal').style.display = 'none';
+    _cropImage = null;
+    _cropBoxRect = null;
+    _croppedCanvas = null;
+  }
+
+  // トリミング範囲のドラッグ移動・四隅のリサイズ（マウス／タッチ共通：Pointer Events使用）
+  (function() {
+    var stage = document.getElementById('crop-stage');
+    var box = document.getElementById('crop-box');
+
+    function stageSize() {
+      var imgEl = document.getElementById('crop-image');
+      return { w: imgEl.clientWidth, h: imgEl.clientHeight };
+    }
+
+    box.addEventListener('pointerdown', function(e) {
+      if (e.target.classList.contains('crop-handle')) return; // ハンドル側で処理
+      e.preventDefault();
+      _cropDrag = { mode: 'move', startX: e.clientX, startY: e.clientY, rect: Object.assign({}, _cropBoxRect) };
+      box.setPointerCapture(e.pointerId);
+    });
+
+    document.querySelectorAll('.crop-handle').forEach(function(handle) {
+      handle.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _cropDrag = { mode: 'resize', corner: handle.dataset.corner, startX: e.clientX, startY: e.clientY, rect: Object.assign({}, _cropBoxRect) };
+        handle.setPointerCapture(e.pointerId);
+      });
+    });
+
+    stage.addEventListener('pointermove', function(e) {
+      if (!_cropDrag || !_cropBoxRect) return;
+      var s = stageSize();
+      var dx = e.clientX - _cropDrag.startX;
+      var dy = e.clientY - _cropDrag.startY;
+      var r = _cropDrag.rect;
+
+      if (_cropDrag.mode === 'move') {
+        var left = Math.min(Math.max(0, r.left + dx), s.w - r.width);
+        var top = Math.min(Math.max(0, r.top + dy), s.h - r.height);
+        _cropBoxRect = { left: left, top: top, width: r.width, height: r.height };
+      } else {
+        var MIN = 40; // 最小サイズ(px)
+        var left = r.left, top = r.top, width = r.width, height = r.height;
+        if (_cropDrag.corner === 'tl') {
+          left = Math.min(r.left + dx, r.left + r.width - MIN);
+          top = Math.min(r.top + dy, r.top + r.height - MIN);
+          left = Math.max(0, left); top = Math.max(0, top);
+          width = (r.left + r.width) - left;
+          height = (r.top + r.height) - top;
+        } else if (_cropDrag.corner === 'tr') {
+          top = Math.min(r.top + dy, r.top + r.height - MIN);
+          top = Math.max(0, top);
+          width = Math.min(r.width + dx, s.w - r.left);
+          width = Math.max(MIN, width);
+          height = (r.top + r.height) - top;
+        } else if (_cropDrag.corner === 'bl') {
+          left = Math.min(r.left + dx, r.left + r.width - MIN);
+          left = Math.max(0, left);
+          width = (r.left + r.width) - left;
+          height = Math.min(r.height + dy, s.h - r.top);
+          height = Math.max(MIN, height);
+        } else if (_cropDrag.corner === 'br') {
+          width = Math.min(r.width + dx, s.w - r.left);
+          width = Math.max(MIN, width);
+          height = Math.min(r.height + dy, s.h - r.top);
+          height = Math.max(MIN, height);
+        }
+        _cropBoxRect = { left: left, top: top, width: width, height: height };
+      }
+      updateCropBoxUI();
+    });
+
+    ['pointerup', 'pointercancel'].forEach(function(evt) {
+      stage.addEventListener(evt, function() { _cropDrag = null; });
+      document.addEventListener(evt, function() { _cropDrag = null; });
+    });
+  })();
+
+  // 選択範囲を元画像の実ピクセル座標で切り取り、キャンバスに描画してプレビュー表示する
+  // （このタイミングではQR解析はまだ行わない。読み込むボタンを押した時に解析する）
+  var _croppedCanvas = null; // 切り取り済みのキャンバス（読み込む時にここから解析する）
+
+  function cropAndPreview() {
+    if (!_cropImage || !_cropBoxRect) return;
+    var sx = _cropBoxRect.left / _cropDisplayScale;
+    var sy = _cropBoxRect.top / _cropDisplayScale;
+    var sw = _cropBoxRect.width / _cropDisplayScale;
+    var sh = _cropBoxRect.height / _cropDisplayScale;
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(sw));
+    canvas.height = Math.max(1, Math.round(sh));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(_cropImage, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    _croppedCanvas = canvas;
+
+    document.getElementById('crop-preview-image').src = canvas.toDataURL('image/png');
+    document.getElementById('crop-error').style.display = 'none';
+    showCropView('preview');
+  }
+
+  // プレビュー中の画像（切り取り済み、または画像全体）に対してjsQRで解析を実行する
+  function readCroppedPreview() {
+    if (!_croppedCanvas) return;
+    document.getElementById('crop-error').style.display = 'none';
+    var ctx = _croppedCanvas.getContext('2d');
+    var imgData = ctx.getImageData(0, 0, _croppedCanvas.width, _croppedCanvas.height);
+    var code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) {
+      closeCropModal();
+      closeScanner();
+      handleScannedText(code.data);
+    } else {
+      document.getElementById('crop-error').style.display = 'block';
+    }
+  }
+
+  function previewFullImage() {
+    if (!_cropImage) return;
+    var canvas = document.createElement('canvas');
+    canvas.width = _cropImage.naturalWidth;
+    canvas.height = _cropImage.naturalHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(_cropImage, 0, 0);
+    _croppedCanvas = canvas;
+
+    document.getElementById('crop-preview-image').src = canvas.toDataURL('image/png');
+    document.getElementById('crop-error').style.display = 'none';
+    showCropView('preview');
+  }
+
+  document.getElementById('crop-confirm-btn').addEventListener('click', cropAndPreview);
+  document.getElementById('crop-full-btn').addEventListener('click', previewFullImage);
+  document.getElementById('crop-read-btn').addEventListener('click', readCroppedPreview);
+  document.getElementById('crop-back-btn').addEventListener('click', function() {
+    document.getElementById('crop-error').style.display = 'none';
+    showCropView('select');
+  });
+  document.getElementById('crop-cancel-btn').addEventListener('click', closeCropModal);
 
   function closeScanner() {
     if (scannerStream) {
