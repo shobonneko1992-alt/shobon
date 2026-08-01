@@ -373,7 +373,9 @@
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<!-- 🔑 合言葉（4桁コード）共有機能用：Firebase SDK（Realtime Database） -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="app">
@@ -493,25 +495,26 @@
     </div>
   </div>
 
-  <!-- QRコードデータ送受信 -->
-  <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
-    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-qrtransfer')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
-      <span>📷 QRコードデータ送受信</span>
-      <span id="acc-qrtransfer-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
-    </button>
-    <div id="acc-qrtransfer" style="display:none;padding:12px 2px 4px;">
 
-      <!-- ステップ1：まず 送る／受け取る を選ぶ -->
-      <div id="qrtransfer-step1">
-        <div style="display:flex;gap:8px;">
-          <button onclick="openQrSendView()" style="flex:1;padding:14px 8px;background:#3a9050;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
-          <button onclick="openScanner()" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
-        </div>
-        <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">送る：曜日・AM/PMを選んでQRコードを表示します（全曜日一括はデータが多すぎるため非対応です）。<br>受け取る：カメラが起動します。相手が表示したQRコードを枠内に合わせて読み取ってください。</p>
+  <!-- 🔑 合言葉（4桁コード）でのクラウド共有 -->
+  <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
+    <button class="settings-accordion-btn" onclick="toggleAccordion('acc-codeshare')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
+      <span>🔑 合言葉でクラウド共有</span>
+      <span id="acc-codeshare-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
+    </button>
+    <div id="acc-codeshare" style="display:none;padding:12px 2px 4px;">
+      <label style="font-size:11px;color:#777;font-weight:700;display:block;margin-bottom:6px;">送る範囲</label>
+      <select id="codeshare-scope" style="width:100%;font-size:13px;border:1px solid #ddd;border-radius:8px;padding:9px;background:#fff;color:#444;margin-bottom:10px;">
+        <option value="day">現在の1日分（表示中の曜日・AM/PMのみ）</option>
+        <option value="all">全曜日まとめて（月〜金・AM/PM全部）</option>
+      </select>
+      <div style="display:flex;gap:8px;">
+        <button id="send-code-btn" style="flex:1;padding:14px 8px;background:#7040b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
+        <button id="recv-code-btn" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
+      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、4桁の数字（合言葉）でやり取りします。送る側は表示された4桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。受け取り側は自動的に1日分／全曜日を判定します。</p>
     </div>
   </div>
-
 
   <!-- リセット -->
   <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
@@ -554,25 +557,6 @@
     <button id="method-import-file-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📄 ファイルを選んで読み込む</button>
   </div>
 
-  <!-- QR送る：対象を選ぶ -->
-  <div id="method-qr-target-view" style="display:none;">
-    <p style="font-size:12px;color:#666;margin-bottom:10px;">送る曜日・AM/PMを選んでください</p>
-    <select id="qr-transfer-target" style="width:100%;font-size:13px;border:1px solid #ddd;border-radius:8px;padding:10px;background:#fff;color:#444;margin-bottom:14px;">
-      <optgroup label="月"><option value="0-0">月AM</option><option value="0-1">月PM</option></optgroup>
-      <optgroup label="火"><option value="1-0">火AM</option><option value="1-1">火PM</option></optgroup>
-      <optgroup label="水"><option value="2-0">水AM</option><option value="2-1">水PM</option></optgroup>
-      <optgroup label="木"><option value="3-0">木AM</option><option value="3-1">木PM</option></optgroup>
-      <optgroup label="金"><option value="4-0">金AM</option><option value="4-1">金PM</option></optgroup>
-    </select>
-    <button id="method-qr-target-next-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📷 QRコードを表示</button>
-  </div>
-
-  <!-- QR送る -->
-  <div id="method-qr-send-view" style="display:none;text-align:center;">
-    <p style="font-size:11px;color:#888;margin-bottom:10px;">相手のスマホのカメラ（QR読み取り機能）で読み取ってもらってください</p>
-    <div id="method-qr-code" style="display:inline-block;min-width:200px;min-height:200px;"></div>
-    <p id="method-qr-error" style="display:none;font-size:12px;color:#e05050;margin-top:10px;">データが大きすぎてQRコードにできません。<br>「📤 テキストデータ送受信」からお送りください。</p>
-  </div>
 </div>
 
 
@@ -589,17 +573,6 @@
     <textarea id="memo-recv-text-input" placeholder="ここに貼り付け…" style="width:100%;height:80px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;font-family:inherit;"></textarea>
     <button id="memo-recv-text-do-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
   </div>
-</div>
-
-<!-- QRコードスキャナーモーダル -->
-<div id="scanner-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1300;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
-  <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px;">📷 QRコードを読み取ってください</div>
-  <video id="scanner-video" style="width:280px;height:280px;object-fit:cover;border-radius:10px;background:#000;" playsinline autoplay muted></video>
-  <div style="color:#aaa;font-size:12px;margin-top:12px;">QRコードを枠内に合わせてください</div>
-  <div id="scanner-error" style="display:none;color:#ff8080;font-size:12px;margin-top:10px;text-align:center;max-width:280px;"></div>
-  <input type="file" id="scanner-file-input" accept="image/*" style="display:none;">
-  <button id="scanner-file-btn" style="margin-top:18px;padding:10px 24px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖼️ 画像ファイルから読み取る</button>
-  <button id="scanner-close-btn" style="margin-top:10px;padding:10px 36px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">キャンセル</button>
 </div>
 
 <!-- 共有リンクモーダル -->
@@ -672,6 +645,30 @@
   </div>
 </div>
 
+<!-- 🔑 合言葉（4桁コード）送信 モーダル -->
+<div id="send-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
+<div id="send-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉（4桁コード）の発行</span>
+    <span id="send-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
+  </div>
+  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の4桁コードを伝えてください。</p>
+  <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#7040b8;text-align:center;margin:16px 0;padding:12px;background:#f0e8fa;border-radius:10px;" id="generated-code">----</div>
+  <p style="font-size:10px;color:#aaa;text-align:center;">※データは一定時間後に自動で失効します。</p>
+</div>
+
+<!-- 🔑 合言葉（4桁コード）受信 モーダル -->
+<div id="recv-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
+<div id="recv-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉でデータを受信</span>
+    <span id="recv-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
+  </div>
+  <p style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">教えてもらった4桁のコードを入力してください。</p>
+  <input type="number" id="input-code" style="font-size:26px;font-weight:700;letter-spacing:8px;text-align:center;width:180px;margin:10px auto;display:block;padding:8px;border:1px solid #ddd;border-radius:8px;" placeholder="0000" maxlength="4">
+  <button id="exec-recv-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;">データを受信する</button>
+</div>
+
 <!-- メモハンドル -->
 <div id="memo-handle">
   <div class="handle-bar"></div>
@@ -718,6 +715,60 @@
 
 <script>
 //
+  // ========================================================================
+  // 🔑 Firebase設定（合言葉＝4桁コードでのクラウド共有機能に使用）
+  // ------------------------------------------------------------------------
+  // 【設定手順】
+  // 1. https://console.firebase.google.com/ にアクセスしてプロジェクトを作成
+  // 2. 左メニュー「構築」→「Realtime Database」→「データベースを作成」
+  //    （リージョンは asia-southeast1 などお好みで／セキュリティルールは
+  //     いったん「テストモード」でOK。後述のルール例も参照）
+  // 3. 左メニューの歯車アイコン→「プロジェクトの設定」→下の方の
+  //    「マイアプリ」で「</>（ウェブ）」を選んでアプリを登録
+  // 4. 表示される firebaseConfig の値を、下の YOUR_XXX の部分に
+  //    そのまま貼り付ける（databaseURL は Realtime Database の
+  //    トップ画面に表示されているURLをコピー）
+  // 5. Realtime Database の「ルール」タブで、例えば以下のように
+  //    設定（今回のような一時的な合言葉共有用途の簡易ルール例）：
+  //    {
+  //      "rules": {
+  //        "shares": {
+  //          "$code": {
+  //            ".read": true,
+  //            ".write": true
+  //          }
+  //        }
+  //      }
+  //    }
+  //    ※ 誰でも読み書きできる設定です。運用時は有効期限チェックや
+  //      Cloud Functionsでの自動削除などを検討してください。
+  // ------------------------------------------------------------------------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTMVatCaW18k8p_pi9_AKs3u1DpQQjy6s",
+    authDomain: "table-data-9ec43.firebaseapp.com",
+    databaseURL: "https://table-data-9ec43-default-rtdb.firebaseio.com",
+    projectId: "table-data-9ec43",
+    storageBucket: "table-data-9ec43.firebasestorage.app",
+    messagingSenderId: "943251191948",
+    appId: "1:943251191948:web:5eed1955d45cda8f32e3a9"
+  };
+
+  // firebaseConfigが未設定（プレースホルダのまま）の場合は初期化しない
+  // → クラウド共有機能のボタンを押した時にエラーメッセージで案内する
+  let db = null;
+  try {
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    } else {
+      console.warn('firebaseConfigが未設定です。「合言葉で共有」機能を使うには、コード上部のfirebaseConfigに実際の値を設定してください。');
+    }
+  } catch (e) {
+    console.warn('Firebaseの初期化に失敗しました:', e);
+    db = null;
+  }
+  // ========================================================================
+
   const SEAT_COUNT = 19;
   const SW = 48, SH = 40;
   const STORAGE_KEY = 'seat-planner-v3';
@@ -809,32 +860,6 @@
       el.addEventListener('touchend', onTouchEnd, { passive: false });
       b.appendChild(el);
     });
-  }
-
-  // 保存・読込
-  function saveData() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allSeats));
-      const t = document.getElementById('toast');
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1800);
-    } catch(e) { alert('保存できませんでした'); }
-  }
-
-  function loadData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length === 5) {
-          // 座席数が変わった場合はリセット
-          const firstSlot = parsed.flat().find(s => s !== null);
-          if (firstSlot && firstSlot.length === SEAT_COUNT) {
-            allSeats = parsed;
-          }
-        }
-      }
-    } catch(e) {}
   }
 
   // 色を適用
@@ -1278,8 +1303,7 @@
     }
   }, { passive: true });
 
-  // 保存にメモ・フォルダも含める
-  const _origSaveData = saveData;
+  // 保存・読込（座席・メモ・フォルダをまとめて保存／旧フォーマットの座席のみのデータも読み込み可能）
   function saveData() {
     saveMemoState();
     try {
@@ -1627,122 +1651,6 @@
     return null;
   }
 
-  function compressData() {
-    var compressed = [];
-    for (var d = 0; d < 5; d++) {
-      var dayData = [];
-      for (var a = 0; a < 2; a++) {
-        var seats = allSeats[d][a];
-        if (!seats) { dayData.push(''); continue; }
-        // 名前・色・位置を圧縮
-        var parts = seats.map(function(s) {
-          var c = COLOR_SHORT[s.color] || '0';
-          var x = Math.round(s.x);
-          var y = Math.round(s.y);
-          return (s.name || '') + ':' + c + ':' + x + ':' + y;
-        });
-        dayData.push(parts.join('|'));
-      }
-      compressed.push(dayData);
-    }
-    var memoData = allMemos.map(function(dm) {
-      return dm.map(function(m) { return m || ''; });
-    });
-    return { v: 4, c: compressed, m: memoData };
-  }
-
-  // 圧縮データを展開
-  function expandData(obj) {
-    // v4フォーマット（位置情報あり）
-    if (obj.v === 4 && obj.c) {
-      var expanded = [];
-      for (var d = 0; d < 5; d++) {
-        var dayData = [];
-        for (var a = 0; a < 2; a++) {
-          var str = obj.c[d][a];
-          var base = makeSeats();
-          if (str) {
-            var parts = str.split('|');
-            parts.forEach(function(p, i) {
-              var seg = p.split(':');
-              var name = seg[0] || '';
-              var colorCode = seg[1] || '0';
-              var x = seg[2] !== undefined ? parseInt(seg[2]) : null;
-              var y = seg[3] !== undefined ? parseInt(seg[3]) : null;
-              if (i < base.length) {
-                base[i].name = name;
-                base[i].color = COLOR_LONG[colorCode] || 'default';
-                if (x !== null) base[i].x = x;
-                if (y !== null) base[i].y = y;
-              } else {
-                var b = board();
-                base.push({
-                  id: i + 1,
-                  x: x !== null ? x : Math.round((b.clientWidth - SW) / 2),
-                  y: y !== null ? y : Math.round((b.clientHeight - SH) / 2),
-                  name: name,
-                  color: COLOR_LONG[colorCode] || 'default'
-                });
-              }
-            });
-          }
-          dayData.push(base);
-        }
-        expanded.push(dayData);
-      }
-      return { seats: expanded, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    // v3フォーマット（後方互換）
-    if (obj.v === 3 && obj.c) {
-      var expanded3 = [];
-      for (var d3 = 0; d3 < 5; d3++) {
-        var dayData3 = [];
-        for (var a3 = 0; a3 < 2; a3++) {
-          var str3 = obj.c[d3][a3];
-          var base3 = makeSeats();
-          if (str3) {
-            var parts3 = str3.split('|');
-            parts3.forEach(function(p, i) {
-              var idx = p.lastIndexOf(':');
-              var name3 = idx >= 0 ? p.substring(0, idx) : p;
-              var colorCode3 = idx >= 0 ? p.substring(idx+1) : '0';
-              if (i < base3.length) {
-                base3[i].name = name3;
-                base3[i].color = COLOR_LONG[colorCode3] || 'default';
-              }
-            });
-          }
-          dayData3.push(base3);
-        }
-        expanded3.push(dayData3);
-      }
-      return { seats: expanded3, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    // v2フォーマット（後方互換）
-    if (obj.v === 2 && obj.c) {
-      var expanded2 = [];
-      for (var d2 = 0; d2 < 5; d2++) {
-        var dayData2 = [];
-        for (var a2 = 0; a2 < 2; a2++) {
-          var slim = obj.c[d2][a2];
-          var base2 = makeSeats();
-          if (slim) {
-            slim.forEach(function(item, i) {
-              if (i < base2.length) {
-                base2[i].name = item[0] || '';
-                base2[i].color = item[1] || 'default';
-              }
-            });
-          }
-          dayData2.push(base2);
-        }
-        expanded2.push(dayData2);
-      }
-      return { seats: expanded2, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    return null;
-  }
-
   // ========== 方法選択モーダル ==========
   var _methodDir = 'send';   // 'send' or 'recv'
 
@@ -1776,128 +1684,17 @@
   function closeMethodModal() {
     document.getElementById('method-modal-overlay').style.display = 'none';
     document.getElementById('method-modal').style.display = 'none';
-    document.getElementById('method-qr-code').innerHTML = '';
-    document.getElementById('method-qr-error').style.display = 'none';
   }
 
   function showMethodView(view) {
-    ['method-text-send-view','method-text-recv-view','method-qr-target-view','method-qr-send-view'].forEach(function(id) {
+    ['method-text-send-view','method-text-recv-view'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
     document.getElementById('method-' + view + '-view').style.display = 'block';
   }
 
-  // ========== QRコードデータ送受信：受け取る（カメラでQRコードを読み取る） ==========
-  var scannerStream = null;
-  var scannerAnimFrame = null;
-
-  function openScanner() {
-    document.getElementById('scanner-error').style.display = 'none';
-    document.getElementById('scanner-modal').style.display = 'flex';
-    var video = document.getElementById('scanner-video');
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
-    }).then(function(stream) {
-      scannerStream = stream;
-      video.srcObject = stream;
-      video.setAttribute('playsinline', true); // iOSでフルスクリーン化を防ぐ
-      video.play().catch(function() {});
-
-      function scanLoop() {
-        if (!scannerStream) return; // closeScanner()済みなら止める
-        if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-          var canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          var code = null;
-          try {
-            // 'attemptBoth'：白背景に黒モジュール／その逆どちらのQRコードも読み取れるようにする
-            code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
-          } catch (e) { /* 次のフレームでリトライ */ }
-          if (code && code.data) {
-            var scannedText = code.data;
-            closeScanner();
-            // 読み取った内容をテキスト受け取り画面に表示し、確認してから読み込んでもらう
-            openMethodModal('recv');
-            document.getElementById('method-import-text').value = scannedText;
-            document.getElementById('method-modal-subtitle').textContent = 'QRコードから読み取った内容です。内容を確認して「読み込む」を押してください。';
-            return; // ← ループを止める
-          }
-        }
-        scannerAnimFrame = requestAnimationFrame(scanLoop);
-      }
-      scanLoop();
-    }).catch(function(err) {
-      document.getElementById('scanner-error').style.display = 'block';
-      document.getElementById('scanner-error').textContent =
-        'カメラを起動できませんでした（' + (err && err.name ? err.name : 'エラー') + '）。ブラウザのカメラ許可を確認してください。';
-    });
-  }
-
-  function closeScanner() {
-    if (scannerStream) {
-      scannerStream.getTracks().forEach(function(t) { t.stop(); });
-      scannerStream = null;
-    }
-    if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
-    document.getElementById('scanner-modal').style.display = 'none';
-  }
-
-  document.getElementById('scanner-close-btn').addEventListener('click', closeScanner);
-
-  // カメラが使えない・読み取れない場合のフォールバック：画像ファイルから読み取る
-  document.getElementById('scanner-file-btn').addEventListener('click', function() {
-    document.getElementById('scanner-file-input').click();
-  });
-  document.getElementById('scanner-file-input').addEventListener('change', function(e) {
-    var file = e.target.files && e.target.files[0];
-    document.getElementById('scanner-file-input').value = '';
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      var image = new Image();
-      image.onload = function() {
-        var canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0);
-        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        var code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
-        if (code && code.data) {
-          closeScanner();
-          openMethodModal('recv');
-          document.getElementById('method-import-text').value = code.data;
-          document.getElementById('method-modal-subtitle').textContent = 'QRコードから読み取った内容です。内容を確認して「読み込む」を押してください。';
-        } else {
-          document.getElementById('scanner-error').style.display = 'block';
-          document.getElementById('scanner-error').textContent = 'この画像からQRコードを読み取れませんでした。別の画像でお試しください。';
-        }
-      };
-      image.onerror = function() {
-        document.getElementById('scanner-error').style.display = 'block';
-        document.getElementById('scanner-error').textContent = '画像の読み込みに失敗しました。';
-      };
-      image.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  // QRコードデータ送受信：送る（曜日・AM/PMを選んでもらう画面を開く）
-  // ※全曜日一括はデータが多すぎてQRコードにできないため、1日分（曜日・AM/PM単位）でのみ対応
-  function openQrSendView() {
-    _methodDir = 'send';
-    document.getElementById('method-modal-overlay').style.display = 'block';
-    document.getElementById('method-modal').style.display = 'block';
-    document.getElementById('method-modal-title').textContent = '📷 QRコードで送る';
-    document.getElementById('method-modal-subtitle').textContent = '曜日・AM/PMを選んでください';
-    showMethodView('qr-target');
-  }
-
   // QRコード生成ヘルパー（qrcode-generatorライブラリ／Type1〜40まで自動対応・大幅に余裕あり）
+  // ※メモ共有（リンク・テキストのQR表示）で使用
   function renderQrInto(area, text) {
     area.innerHTML = '';
     var qr = qrcode(0, 'L'); // typeNumber=0で自動選択
@@ -1907,32 +1704,6 @@
     var svg = area.querySelector('svg');
     if (svg) { svg.style.width = '100%'; svg.style.maxWidth = '220px'; svg.style.height = 'auto'; }
   }
-
-  // 対象決定 →「次へ」→ 実際にQRコードを生成する
-  document.getElementById('method-qr-target-next-btn').addEventListener('click', function() {
-    var val = document.getElementById('qr-transfer-target').value.split('-');
-    var d = parseInt(val[0]), a = parseInt(val[1]);
-    var dn = ['月','火','水','木','金'];
-    var label = dn[d] + (a === 0 ? 'AM' : 'PM');
-    document.getElementById('method-modal-subtitle').textContent = label + ' のデータ';
-    showMethodView('qr-send');
-
-    var area = document.getElementById('method-qr-code');
-    var errEl = document.getElementById('method-qr-error');
-    area.innerHTML = '';
-    errEl.style.display = 'none';
-
-    try {
-      if (!allSeats[d][a]) allSeats[d][a] = makeSeats();
-      // QRは容量が限られるためBase64化せず、軽量な独自フォーマットのまま埋め込む
-      // 別アプリのQRリーダーでも読める・表示できるよう、通常のJSONテキストとしてエンコードする
-      var raw = encodeDayDataReadable(d, a);
-      renderQrInto(area, raw);
-    } catch (e) {
-      area.innerHTML = '';
-      errEl.style.display = 'block';
-    }
-  });
 
   document.getElementById('method-modal-close').addEventListener('click', closeMethodModal);
   document.getElementById('method-modal-overlay').addEventListener('click', closeMethodModal);
@@ -2412,6 +2183,93 @@
       });
     } catch(e) {}
   })();
+
+  // ========== 🔑 合言葉（4桁コード）でのクラウド共有（Firebase） ==========
+  var sendCodeModal = document.getElementById('send-code-modal');
+  var sendCodeOverlay = document.getElementById('send-code-overlay');
+  var recvCodeModal = document.getElementById('recv-code-modal');
+  var recvCodeOverlay = document.getElementById('recv-code-overlay');
+
+  function closeSendCodeModal() {
+    sendCodeModal.style.display = 'none';
+    sendCodeOverlay.style.display = 'none';
+  }
+  function closeRecvCodeModal() {
+    recvCodeModal.style.display = 'none';
+    recvCodeOverlay.style.display = 'none';
+  }
+
+  document.getElementById('send-code-btn').addEventListener('click', function() {
+    if (!db) {
+      alert('Firebaseの設定（firebaseConfig）が完了していません。コード上部のfirebaseConfigに実際の値を設定してください。');
+      return;
+    }
+    saveMemoState();
+    // 1000〜9999のランダムな4桁コードを生成
+    var code = Math.floor(1000 + Math.random() * 9000).toString();
+    var scope = document.getElementById('codeshare-scope').value;
+    var raw;
+    if (scope === 'all') {
+      // 全曜日一括：テキストデータ送受信の「一括送信」と同じv5形式（座席・メモとも全曜日ぶん）を再利用
+      for (var d = 0; d < 5; d++) for (var a = 0; a < 2; a++) { if (!allSeats[d][a]) allSeats[d][a] = makeSeats(); }
+      raw = JSON.stringify(compressData());
+    } else {
+      // 1日分：既存のQR送信と同じ「1日分（曜日・AM/PM単位）」の読みやすいJSON形式を再利用する
+      raw = encodeDayDataReadable(currentDay, currentAmPm);
+    }
+
+    document.getElementById('generated-code').textContent = '----';
+    sendCodeModal.style.display = 'block';
+    sendCodeOverlay.style.display = 'block';
+
+    db.ref('shares/' + code).set({ text: raw, timestamp: Date.now() }).then(function() {
+      document.getElementById('generated-code').textContent = code;
+    }).catch(function(err) {
+      closeSendCodeModal();
+      alert('送信エラー: ' + err.message);
+    });
+  });
+
+  document.getElementById('send-code-close').addEventListener('click', closeSendCodeModal);
+  sendCodeOverlay.addEventListener('click', closeSendCodeModal);
+
+  document.getElementById('recv-code-btn').addEventListener('click', function() {
+    if (!db) {
+      alert('Firebaseの設定（firebaseConfig）が完了していません。コード上部のfirebaseConfigに実際の値を設定してください。');
+      return;
+    }
+    document.getElementById('input-code').value = '';
+    recvCodeModal.style.display = 'block';
+    recvCodeOverlay.style.display = 'block';
+    setTimeout(function() { document.getElementById('input-code').focus(); }, 80);
+  });
+
+  document.getElementById('recv-code-close').addEventListener('click', closeRecvCodeModal);
+  recvCodeOverlay.addEventListener('click', closeRecvCodeModal);
+
+  document.getElementById('exec-recv-btn').addEventListener('click', function() {
+    var code = document.getElementById('input-code').value.trim();
+    if (code.length !== 4) { alert('4桁の数字を入力してください'); return; }
+
+    db.ref('shares/' + code).once('value').then(function(snapshot) {
+      if (!snapshot.exists()) {
+        alert('該当するコードが見つかりません。番号を確認してください。');
+        return;
+      }
+      var data = snapshot.val();
+      if (!data || !data.text) {
+        alert('データの形式が正しくありません。');
+        return;
+      }
+      // 既存の「テキストデータ取り込み」処理をそのまま再利用する
+      // （曜日・AM/PM・座席・メモの反映、確認ダイアログ、再描画まで一括で行われる）
+      closeRecvCodeModal();
+      document.getElementById('method-import-text').value = data.text;
+      document.getElementById('method-import-do-btn').click();
+    }).catch(function(err) {
+      alert('受信エラー: ' + err.message);
+    });
+  });
 
   // 起動
   loadData();
