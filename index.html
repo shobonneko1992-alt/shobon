@@ -409,6 +409,7 @@
       <span><span class="legend-dot" style="background:#bfd9f5;"></span>男性</span>
       <span><span class="legend-dot" style="background:#f5c0d0;"></span>女性</span>
     </div>
+    <div id="color-usage-summary" class="legend" style="flex-wrap:wrap;"></div>
     <div class="btn-group">
       <button class="save-btn" id="save-btn">💾 保存</button>
       <button id="settings-btn" style="padding:5px 10px;background:#888;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;">⚙️</button>
@@ -860,6 +861,36 @@
       el.addEventListener('touchend', onTouchEnd, { passive: false });
       b.appendChild(el);
     });
+
+    updateColorCounts();
+  }
+
+  // 使われている色ごとの座席数を集計して、色指定の下に表示する
+  function updateColorCounts() {
+    const seats = getSeats();
+    const counts = {};
+    seats.forEach(seat => {
+      const key = seat.color || 'default';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    const order = ['default', 'blue', 'pink', 'green', 'yellow'];
+    const area = document.getElementById('color-usage-summary');
+    if (!area) return;
+    area.innerHTML = '';
+    order.forEach(key => {
+      const n = counts[key] || 0;
+      if (n === 0) return; // 使われていない色は表示しない
+      const c = COLOR_MAP[key] || COLOR_MAP.default;
+      const span = document.createElement('span');
+      const dot = document.createElement('span');
+      dot.className = 'legend-dot';
+      dot.style.background = c.bg;
+      dot.style.borderRadius = '50%'; // ●表示（色指定ボタンと対応が分かりやすいよう丸に）
+      span.appendChild(dot);
+      span.appendChild(document.createTextNode(n + '席'));
+      area.appendChild(span);
+    });
   }
 
   // 色を適用
@@ -873,6 +904,7 @@
     el.style.background = c.bg;
     const nameEl = el.querySelector('.seat-name');
     if (nameEl) nameEl.style.color = nameEl.classList.contains('empty') ? 'rgba(0,0,0,0.25)' : c.text;
+    updateColorCounts();
   }
 
   // 名前編集
