@@ -25,7 +25,9 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    padding: 10px 12px 46px;
+    height: 100dvh; /* スマホのアドレスバーで下端が隠れないように */
+    padding: 10px 12px calc(46px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
   }
 
   /* 曜日タブ */
@@ -167,8 +169,8 @@
     font-size: 8px; font-weight: bold; color: rgba(0,0,0,0.22);
   }
   .seat-name {
-    font-size: 13px; max-width: 44px;
-    overflow: auto; text-overflow: ellipsis;
+    font-size: var(--seat-font, 13px); max-width: 44px;
+    overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; text-align: center; font-weight: 500;
   }
   .seat-name.empty { color: rgba(0,0,0,0.22); font-weight: 400; font-size: 10px; }
@@ -262,121 +264,11 @@
   .hint {
     flex-shrink: 0;
     margin-top: 5px; font-size: 10px; color: #bbb; text-align: center;
+    white-space: nowrap; overflow: hidden;
   }
 
-  /* フォルダタブ */
-  #folder-tab-row {
-    display: flex; align-items: center; gap: 0;
-    padding: 0 10px 8px; flex-shrink: 0;
-  }
-  #folder-tabs {
-    display: flex; gap: 5px; overflow-x: auto; flex: 1;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  #folder-tabs::-webkit-scrollbar { display: none; }
-  .folder-tab {
-    flex-shrink: 0;
-    padding: 5px 12px;
-    border-radius: 16px;
-    border: 1.5px solid #ddd;
-    background: #f0ede8;
-    color: #888;
-    font-size: 12px; font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s, color 0.15s;
-  }
-  .folder-tab.active {
-    background: #2a2a2a; color: #fff; border-color: #2a2a2a;
-  }
-  #folder-add-btn {
-    flex-shrink: 0; margin-left: 6px;
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    background: #e8e4de; border: none;
-    font-size: 20px; line-height: 1;
-    cursor: pointer; color: #888;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* フォルダ編集モーダル */
-  #folder-modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4); z-index: 1100;
-  }
-  #folder-modal {
-    display: none; position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: #faf9f6;
-    border-radius: 18px 18px 0 0;
-    padding: 20px 18px 32px;
-    z-index: 1101;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
-  }
-  #folder-modal input {
-    width: 100%; padding: 10px 12px;
-    border: 1.5px solid #ddd; border-radius: 8px;
-    font-size: 14px; font-family: inherit;
-    outline: none; margin-bottom: 12px;
-  }
-  #folder-modal input:focus { border-color: #2a2a2a; }
-
-  /* メモ検索 */
-  #memo-search-bar {
-    display: none;
-    flex-shrink: 0;
-    padding: 0 12px 8px;
-    gap: 8px;
-    align-items: center;
-  }
-  #memo-search-bar.open { display: flex; }
-  #memo-search-input {
-    flex: 1; padding: 8px 12px;
-    border: 1.5px solid #ddd; border-radius: 20px;
-    font-size: 13px; font-family: inherit;
-    outline: none; background: #fff;
-  }
-  #memo-search-input:focus { border-color: #2a2a2a; }
-  #memo-search-clear {
-    flex-shrink: 0; background: none; border: none;
-    font-size: 18px; color: #bbb; cursor: pointer;
-    padding: 0 2px; line-height: 1;
-  }
-  #memo-search-results {
-    flex: 1; overflow-y: auto;
-    margin: 0 12px 12px;
-    display: none;
-  }
-  #memo-search-results.open { display: block; }
-  .search-result-item {
-    padding: 10px 12px; margin-bottom: 6px;
-    background: #fff; border-radius: 8px;
-    border: 1px solid #eee; cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .search-result-item:active { background: #f0ede8; }
-  .search-result-folder {
-    font-size: 11px; font-weight: 700; color: #888;
-    margin-bottom: 4px;
-  }
-  .search-result-snippet {
-    font-size: 13px; color: #444; line-height: 1.5;
-  }
-  .search-result-snippet mark {
-    background: #ffe066; color: #333;
-    border-radius: 2px; padding: 0 1px;
-  }
-  .search-no-result {
-    text-align: center; color: #bbb;
-    font-size: 13px; padding: 24px 0;
-  }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<!-- 🔑 合言葉（4桁コード）共有機能用：Firebase SDK（Realtime Database） -->
+<!-- 🔑 合言葉（5桁コード）共有機能用：Firebase SDK（Realtime Database） -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
@@ -413,8 +305,9 @@
       <span><span class="legend-dot" style="background:#f5c0d0;"></span>女性</span>
     </div>
     <div class="btn-group">
-      <button class="save-btn" id="save-btn">💾 保存</button>
-      <button id="settings-btn" style="padding:5px 10px;background:#888;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;">⚙️</button>
+      <button id="undo-btn" title="元に戻す" aria-label="元に戻す" disabled style="padding:5px 10px;background:#888;color:#fff;border:none;border-radius:4px;font-size:16px;line-height:1;cursor:pointer;margin-right:4px;">↩</button>
+      <button id="redo-btn" title="やり直し" aria-label="やり直し" disabled style="padding:5px 10px;background:#888;color:#fff;border:none;border-radius:4px;font-size:16px;line-height:1;cursor:pointer;margin-right:4px;">↪</button>
+      <button id="settings-btn" title="メニュー" aria-label="メニューを開く" style="padding:5px 10px;background:#888;color:#fff;border:none;border-radius:4px;font-size:16px;line-height:1;cursor:pointer;">☰</button>
     </div>
   </div>
   <div id="color-usage-summary" class="legend" style="flex-wrap:wrap;margin:-4px 0 8px 5px;"></div>
@@ -427,15 +320,61 @@
   <p class="hint" style="font-size:8px;">色を選んでタップ → 色変更 ／ ダブルタップ → 名前入力 ／ ドラッグ → 移動</p>
 </div>
 
-<!-- 設定オーバーレイ -->
-<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;"></div>
+<!-- サイドドロワー -->
+<style>
+  #settings-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1100; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s; }
+  #settings-overlay.open { opacity:1; visibility:visible; }
+  #settings-panel { position:fixed; top:0; right:0; bottom:0; width:min(78%,270px); background:#faf9f6; padding:14px 12px calc(20px + env(safe-area-inset-bottom)); overflow-y:auto; -webkit-overflow-scrolling:touch; z-index:1101; box-shadow:-8px 0 32px rgba(0,0,0,0.18); transform:translateX(105%); visibility:hidden; transition:transform .28s ease, visibility .28s; }
+  #settings-panel.open { transform:translateX(0); visibility:visible; }
+  /* ドロワー幅（270px）に合わせた項目サイズ */
+  #settings-panel .settings-accordion-btn { padding:7px 9px !important; font-size:11px !important; border-radius:7px !important; }
+  #settings-panel [id^="acc-"]:not([id$="-arrow"]) { padding:8px 1px 3px !important; }
+  #settings-panel [id^="acc-"] > div:first-child[style*="font-size:11px"] { font-size:10px !important; margin-bottom:7px !important; }
+  #settings-panel select { font-size:11px !important; padding:5px 6px !important; min-width:0; }
+  #settings-panel #copy-btn { padding:6px 11px !important; font-size:11px !important; }
+  #settings-panel #seat-minus, #settings-panel #seat-plus { width:30px !important; height:30px !important; font-size:17px !important; }
+  #settings-panel #seat-count-label { font-size:14px !important; min-width:30px !important; }
+  #settings-panel #acc-seatcount span:last-child { font-size:10px !important; }
+  #settings-panel #acc-transfer button, #settings-panel #acc-codeshare button, #settings-panel #acc-reset button { padding:9px 6px !important; font-size:12px !important; border-radius:8px !important; }
+  #settings-panel #acc-codeshare label { font-size:10px !important; }
+  #settings-panel #acc-codeshare p { font-size:9px !important; line-height:1.5 !important; margin-top:7px !important; }
+  #undo-btn:disabled, #redo-btn:disabled { opacity:.35; cursor:default; }
+  #settings-panel #font-slider { min-width:0; }
+  #settings-panel #font-size-label { min-width:28px !important; font-size:11px !important; }
+  #settings-panel > div[style*="margin-bottom:18px"] { margin-bottom:12px !important; }
+  #settings-panel > div[style*="border-top"] { padding-top:8px !important; margin-top:3px !important; }
+  .drawer-section-title { font-size:11px; font-weight:700; color:#999; letter-spacing:.05em; margin:4px 0 10px; }
+  /* Excel風 自動保存トグル */
+  #autosave-btn { flex:0 0 33.333%; min-width:max-content; width:auto; display:flex; gap:4px; white-space:nowrap; align-items:center; justify-content:space-between; padding:5px 7px; background:#217346; color:#fff; border:none; border-radius:7px; font-family:inherit; font-size:10px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .2s; }
+  #autosave-btn .as-pill { position:relative; width:34px; height:16px; border-radius:8px; background:#fff; flex-shrink:0; }
+  #autosave-btn .as-text { position:absolute; top:0; bottom:0; display:flex; align-items:center; font-size:7px; font-weight:700; color:#217346; transition:left .2s, right .2s; }
+  #autosave-btn .as-knob { position:absolute; top:3px; width:10px; height:10px; border-radius:50%; background:#217346; transition:left .2s; }
+  #autosave-btn[aria-checked="true"] .as-text { left:5px; }
+  #autosave-btn[aria-checked="true"] .as-knob { left:21px; }
+  #autosave-btn[aria-checked="false"] { background:#6b6b6b; }
+  #autosave-btn[aria-checked="false"] .as-text { left:17px; color:#6b6b6b; }
+  #autosave-btn[aria-checked="false"] .as-knob { left:3px; background:#6b6b6b; }
+  #autosave-btn:focus-visible { outline:3px solid #f5c542; outline-offset:2px; }
+  #save-btn { flex:0 0 auto; width:auto; min-width:56px; padding:6px 14px; background:#2a6ab8; color:#fff; border:none; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+</style>
+<div id="settings-overlay"></div>
 
-<!-- 設定パネル -->
-<div id="settings-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:14px;padding:20px 18px;width:88%;max-width:360px;max-height:85vh;overflow-y:auto;z-index:201;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+<aside id="settings-panel" aria-label="メニュー" aria-hidden="true">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-    <span style="font-size:15px;font-weight:700;color:#333;">⚙️ 設定</span>
-    <span id="settings-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
+    <span style="font-size:15px;font-weight:700;color:#333;">☰ メニュー</span>
+    <span id="settings-close" role="button" aria-label="閉じる" style="font-size:24px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
+
+  <!-- 保存 -->
+  <div style="margin-bottom:10px;">
+    <div style="display:flex;flex-direction:row;gap:6px;align-items:stretch;">
+      <button class="save-btn" id="save-btn">保存</button>
+      <button id="autosave-btn" role="switch" aria-checked="true" aria-label="自動保存"><span>自動保存</span><span class="as-pill"><span class="as-text">オン</span><span class="as-knob"></span></span></button>
+    </div>
+    <div id="last-saved-label" style="font-size:9px;color:#aaa;margin-top:5px;">まだ保存していません</div>
+  </div>
+
+  <div style="border-top:1px solid #eee;margin-bottom:12px;"></div>
 
   <!-- 文字サイズ -->
   <div style="margin-bottom:18px;">
@@ -500,7 +439,7 @@
   </div>
 
 
-  <!-- 🔑 合言葉（4桁コード）でのクラウド共有 -->
+  <!-- 🔑 合言葉（5桁コード）でのクラウド共有 -->
   <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
     <button class="settings-accordion-btn" onclick="toggleAccordion('acc-codeshare')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
       <span>🔑 合言葉でクラウド共有</span>
@@ -509,14 +448,14 @@
     <div id="acc-codeshare" style="display:none;padding:12px 2px 4px;">
       <label style="font-size:11px;color:#777;font-weight:700;display:block;margin-bottom:6px;">送る範囲</label>
       <select id="codeshare-scope" style="width:100%;font-size:13px;border:1px solid #ddd;border-radius:8px;padding:9px;background:#fff;color:#444;margin-bottom:10px;">
-        <option value="day">現在の1日分（表示中の曜日・AM/PMのみ）</option>
+        <option value="day">現在の1日分（表示中のみ）</option>
         <option value="all">全曜日まとめて（月〜金・AM/PM全部）</option>
       </select>
       <div style="display:flex;gap:8px;">
         <button id="send-code-btn" style="flex:1;padding:14px 8px;background:#7040b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
         <button id="recv-code-btn" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
-      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、4桁の数字（合言葉）でやり取りします。送る側は表示された4桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。受け取り側は自動的に1日分／全曜日を判定します。</p>
+      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、5桁の数字（合言葉）でやり取りします。送る側は表示された5桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。合言葉は発行から1時間で無効になります。受け取り側は自動的に1日分／全曜日を判定します。</p>
     </div>
   </div>
 
@@ -531,13 +470,13 @@
       <button id="reset-btn" style="width:100%;padding:8px;background:#e05050;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">リセットする</button>
     </div>
   </div>
-</div>
+</aside>
 
 <div id="memo-overlay"></div>
 
 <!-- 方法選択モーダル -->
-<div id="method-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;"></div>
-<div id="method-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:301;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
+<div id="method-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1500;"></div>
+<div id="method-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1501;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
     <span id="method-modal-title" style="font-size:15px;font-weight:700;color:#333;"></span>
     <span id="method-modal-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
@@ -564,79 +503,6 @@
 </div>
 
 
-<!-- メモ テキスト受け取りシート -->
-<div id="memo-recv-text-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1200;"></div>
-<div id="memo-recv-text-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1201;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:15px;font-weight:700;color:#333;">📥 メモを受け取る</span>
-    <span id="memo-recv-text-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
-  </div>
-  <!-- テキスト入力 -->
-  <div id="memo-recv-text-view">
-    <p style="font-size:11px;color:#999;margin-bottom:8px;">送ってもらったテキストを貼り付けてください</p>
-    <textarea id="memo-recv-text-input" placeholder="ここに貼り付け…" style="width:100%;height:80px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#333;margin-bottom:12px;font-family:inherit;"></textarea>
-    <button id="memo-recv-text-do-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
-  </div>
-</div>
-
-<!-- 共有リンクモーダル -->
-<div id="share-link-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1200;"></div>
-<div id="share-link-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1201;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:15px;font-weight:700;color:#333;">🔗 メモを共有</span>
-    <span id="share-link-close" style="font-size:22px;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">×</span>
-  </div>
-  <p id="share-link-desc" style="font-size:11px;color:#999;margin-bottom:12px;"></p>
-
-  <!-- タブ切替 -->
-  <div style="display:flex;gap:6px;margin-bottom:14px;">
-    <button id="share-tab-text" onclick="switchShareTab('text')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #2a2a2a;background:#2a2a2a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📝 テキスト</button>
-    <button id="share-tab-link" onclick="switchShareTab('link')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid #ddd;background:#f0ede8;color:#888;font-size:12px;font-weight:700;cursor:pointer;">🔗 リンク</button>
-  </div>
-
-  <!-- QRコード表示エリア（テキスト／リンクいずれのタブでも、その内容をQRコード化して表示） -->
-  <div style="text-align:center;margin-bottom:14px;">
-    <div id="qr-code-area" style="display:inline-block;min-width:150px;min-height:150px;"></div>
-    <p id="qr-code-error" style="display:none;font-size:11px;color:#e05050;margin-top:6px;">データが大きすぎてQRコードにできません。</p>
-  </div>
-
-  <!-- テキストビュー -->
-  <div id="share-text-view">
-    <p style="font-size:11px;color:#888;margin-bottom:8px;">テキストをコピーしてLINEやメールで送ってください。相手はメモパネルの 📥 から貼り付けて受け取れます。</p>
-    <textarea id="share-text-output" readonly style="width:100%;height:70px;font-size:11px;border:1px solid #ddd;border-radius:8px;padding:8px;resize:none;outline:none;color:#555;background:#f5f5f5;margin-bottom:10px;"></textarea>
-    <button id="share-text-copy-btn" style="width:100%;padding:10px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">📋 コピーする</button>
-    <button id="share-text-native-btn" style="width:100%;padding:10px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 共有する</button>
-  </div>
-
-  <!-- リンクビュー -->
-  <div id="share-link-view" style="display:none;">
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
-      <input id="share-link-input" readonly style="flex:1;padding:9px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:11px;background:#f5f5f5;color:#555;outline:none;">
-      <button id="share-link-copy-btn" style="flex-shrink:0;padding:9px 14px;background:#2a70b8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">コピー</button>
-    </div>
-    <button id="share-link-share-btn" style="width:100%;padding:11px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📤 このリンクを共有</button>
-  </div>
-</div>
-
-<!-- メモ受信バナー（URLパラメータ検出時） -->
-<div id="memo-recv-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#2a2a2a;color:#fff;padding:14px 16px;z-index:2000;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
-  <div style="font-size:13px;font-weight:700;margin-bottom:4px;">📩 メモが届いています</div>
-  <div id="memo-recv-desc" style="font-size:11px;color:#bbb;margin-bottom:10px;"></div>
-  <div style="display:flex;gap:8px;">
-    <button id="memo-recv-accept" style="flex:1;padding:9px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">取り込む</button>
-    <button id="memo-recv-dismiss" style="flex:1;padding:9px;background:#555;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">閉じる</button>
-  </div>
-</div>
-
-<!-- メモQR受信モーダル -->
-<div id="memo-qr-recv-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1500;"></div>
-<div id="memo-qr-recv-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#faf9f6;border-radius:18px 18px 0 0;padding:20px 18px 36px;z-index:1501;box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
-  <div style="font-size:15px;font-weight:700;color:#333;margin-bottom:6px;">📩 メモが届きました</div>
-  <div id="memo-qr-recv-desc" style="font-size:12px;color:#888;margin-bottom:16px;"></div>
-  <button id="memo-qr-recv-accept" style="width:100%;padding:11px;background:#3a9050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">取り込む</button>
-  <button id="memo-qr-recv-dismiss" style="width:100%;padding:11px;background:none;color:#aaa;border:none;font-size:13px;cursor:pointer;">キャンセル</button>
-</div>
-
 <!-- 重複名前 警告バナー -->
 <div id="dup-warning-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#e05050;color:#fff;padding:12px 16px;z-index:3000;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
   <div style="display:flex;align-items:flex-start;gap:10px;">
@@ -649,27 +515,27 @@
   </div>
 </div>
 
-<!-- 🔑 合言葉（4桁コード）送信 モーダル -->
+<!-- 🔑 合言葉（5桁コード）送信 モーダル -->
 <div id="send-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
 <div id="send-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉（4桁コード）の発行</span>
+    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉（5桁コード）の発行</span>
     <span id="send-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の4桁コードを伝えてください。</p>
+  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の5桁コードを伝えてください。<br>（1時間で無効になります）</p>
   <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#7040b8;text-align:center;margin:16px 0;padding:12px;background:#f0e8fa;border-radius:10px;" id="generated-code">----</div>
   <p style="font-size:10px;color:#aaa;text-align:center;">※データは一定時間後に自動で失効します。</p>
 </div>
 
-<!-- 🔑 合言葉（4桁コード）受信 モーダル -->
+<!-- 🔑 合言葉（5桁コード）受信 モーダル -->
 <div id="recv-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
 <div id="recv-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
     <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉でデータを受信</span>
     <span id="recv-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">教えてもらった4桁のコードを入力してください。</p>
-  <input type="number" id="input-code" style="font-size:26px;font-weight:700;letter-spacing:8px;text-align:center;width:180px;margin:10px auto;display:block;padding:8px;border:1px solid #ddd;border-radius:8px;" placeholder="0000" maxlength="4">
+  <p style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">教えてもらった5桁のコードを入力してください。</p>
+  <input type="number" id="input-code" style="font-size:26px;font-weight:700;letter-spacing:8px;text-align:center;width:180px;margin:10px auto;display:block;padding:8px;border:1px solid #ddd;border-radius:8px;" placeholder="00000" maxlength="5" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
   <button id="exec-recv-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;">データを受信する</button>
 </div>
 
@@ -683,36 +549,9 @@
 <div id="memo-panel">
   <div id="memo-panel-header">
     <span id="memo-panel-title">📝 メモ</span>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button id="memo-share-link-btn" title="共有リンクを生成" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">🔗</button>
-      <button id="memo-recv-text-btn" title="テキストで受け取る" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">📥</button>
-      <button id="memo-search-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">🔍</button>
-      <span id="memo-close">×</span>
-    </div>
-  </div>
-  <!-- 検索バー -->
-  <div id="memo-search-bar">
-    <input type="text" id="memo-search-input" placeholder="メモを検索…">
-    <button id="memo-search-clear">×</button>
-  </div>
-  <!-- フォルダタブ行 -->
-  <div id="folder-tab-row">
-    <div id="folder-tabs"></div>
-    <button id="folder-add-btn" title="フォルダを追加">＋</button>
+    <span id="memo-close">×</span>
   </div>
   <textarea id="memo-textarea" placeholder="ここにメモを入力…"></textarea>
-  <!-- 検索結果 -->
-  <div id="memo-search-results"></div>
-</div>
-
-<!-- フォルダ編集モーダル -->
-<div id="folder-modal-overlay"></div>
-<div id="folder-modal">
-  <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:14px;" id="folder-modal-title">📁 フォルダ名</div>
-  <input type="text" id="folder-name-input" placeholder="フォルダ名を入力…" maxlength="20">
-  <button id="folder-save-btn" style="width:100%;padding:11px;background:#2a2a2a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">保存</button>
-  <button id="folder-delete-btn" style="width:100%;padding:11px;background:#e05050;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:none;">🗑 このフォルダを削除</button>
-  <button id="folder-cancel-btn" style="width:100%;padding:11px;background:none;color:#aaa;border:none;font-size:13px;cursor:pointer;margin-top:2px;">キャンセル</button>
 </div>
 
 <div id="toast">💾 保存しました！</div>
@@ -720,7 +559,7 @@
 <script>
 //
   // ========================================================================
-  // 🔑 Firebase設定（合言葉＝4桁コードでのクラウド共有機能に使用）
+  // 🔑 Firebase設定（合言葉＝5桁コードでのクラウド共有機能に使用）
   // ------------------------------------------------------------------------
   // 【設定手順】
   // 1. https://console.firebase.google.com/ にアクセスしてプロジェクトを作成
@@ -775,6 +614,63 @@
 
   const SEAT_COUNT = 19;
   const SW = 48, SH = 40;
+  // ========== 元に戻す（Undo） ==========
+  // 座席データ全体のスナップショットを、変更の直前に積む（最大30件）。
+  const undoStack = [];
+  const redoStack = [];
+  const UNDO_MAX = 30;
+  function snapshot() { return { day: currentDay, ampm: currentAmPm, seats: JSON.stringify(allSeats) }; }
+  function pushSnapshot(sn) {
+    undoStack.push(sn);
+    if (undoStack.length > UNDO_MAX) undoStack.shift();
+    redoStack.length = 0; // 新しい操作をしたら、やり直しの履歴は破棄する
+    updateUndoBtn();
+  }
+  function pushUndo() { pushSnapshot(snapshot()); }
+  function updateUndoBtn() {
+    const btn = document.getElementById('undo-btn');
+    if (btn) btn.disabled = undoStack.length === 0;
+    const rbtn = document.getElementById('redo-btn');
+    if (rbtn) rbtn.disabled = redoStack.length === 0;
+  }
+  // 指定スナップショットの状態を表示する（変更があったページへ移動して描画）
+  function restoreSnapshot(sn) {
+    allSeats = JSON.parse(sn.seats);
+    currentDay = sn.day;
+    currentAmPm = sn.ampm;
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.day) === currentDay));
+    updateAmPmColors();
+    render();
+    document.getElementById('memo-panel-title').textContent =
+      `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
+    if (memoPanel.classList.contains('open')) loadMemo();
+    updateSeatCountLabel();
+    updateUndoBtn();
+  }
+  function undo() {
+    const sn = undoStack.pop();
+    if (!sn) return;
+    // 戻す前の状態を、やり直し用に保存（表示するページは変更があったページ）
+    redoStack.push({ day: sn.day, ampm: sn.ampm, seats: JSON.stringify(allSeats) });
+    restoreSnapshot(sn);
+  }
+  function redo() {
+    const sn = redoStack.pop();
+    if (!sn) return;
+    undoStack.push({ day: sn.day, ampm: sn.ampm, seats: JSON.stringify(allSeats) });
+    if (undoStack.length > UNDO_MAX) undoStack.shift();
+    restoreSnapshot(sn);
+  }
+
+  // 座席位置（seat.x / seat.y）は、盤面の移動可能範囲に対する 0〜1 の割合で持つ。
+  // 端末の画面サイズが違っても、同じ相対配置で表示される。
+  const clamp01 = v => Math.max(0, Math.min(1, isFinite(v) ? v : 0));
+  function boardRange() {
+    const b = document.getElementById('board');
+    return { w: Math.max(1, b.clientWidth - SW), h: Math.max(1, b.clientHeight - SH) };
+  }
+  function seatPxX(seat) { return clamp01(seat.x) * boardRange().w; }
+  function seatPxY(seat) { return clamp01(seat.y) * boardRange().h; }
   const STORAGE_KEY = 'seat-planner-v3';
   const DAY_NAMES = ['月曜日','火曜日','水曜日','木曜日','金曜日'];
   const COLOR_MAP = {
@@ -793,7 +689,39 @@
   let dragging = null;
   let dragOffX = 0, dragOffY = 0;
   let dragMoved = false;
-  let lastTap = {};
+
+  // ===== 自動保存（座席・メモ）のON/OFF =====
+  const AUTOSAVE_KEY = 'seat-planner-autosave';
+  let autoSaveOn = true;
+  try { autoSaveOn = localStorage.getItem(AUTOSAVE_KEY) !== 'off'; } catch(e) {}
+  let _autoSaveTimer = null;
+
+  // 変更があるたびに呼ぶ。ONのときだけ、1秒後にlocalStorageへ書き込む
+  function scheduleAutoSave() {
+    if (!autoSaveOn) return;
+    clearTimeout(_autoSaveTimer);
+    _autoSaveTimer = setTimeout(function() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, coord: 'r' }));
+        markSaved();
+      } catch(e) {}
+    }, 1000);
+  }
+
+  function markSaved() {
+    const el = document.getElementById('last-saved-label');
+    if (!el) return;
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    el.textContent = '最終保存 ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function updateAutoSaveBtn() {
+    const btn = document.getElementById('autosave-btn');
+    if (!btn) return;
+    btn.setAttribute('aria-checked', autoSaveOn ? 'true' : 'false');
+    btn.querySelector('.as-text').textContent = autoSaveOn ? 'オン' : 'オフ';
+  }
 
   // ユーティリティ
   const board = () => document.getElementById('board');
@@ -808,18 +736,19 @@
     const cols = 6, rows = 3;
     const px = (W - cols * SW) / (cols + 1);
     const py = (H - rows * SH) / (rows + 1);
+    const R = boardRange();
     const seats = Array.from({length: 18}, (_, i) => ({
       id: i + 1,
-      x: px + (i % cols) * (SW + px),
-      y: py + Math.floor(i / cols) * (SH + py),
+      x: clamp01((px + (i % cols) * (SW + px)) / R.w),
+      y: clamp01((py + Math.floor(i / cols) * (SH + py)) / R.h),
       name: '',
       color: 'default'
     }));
     // 19番目は画面下部中央に配置
     seats.push({
       id: 19,
-      x: (W - SW) / 2,
-      y: H - SH - 12,
+      x: 0.5,
+      y: clamp01((H - SH - 12) / R.h),
       name: '',
       color: 'default'
     });
@@ -841,6 +770,7 @@
 
   // 座席を描画
   function render() {
+    Object.keys(pendingTap).forEach(function(k) { clearTimeout(pendingTap[k]); delete pendingTap[k]; });
     ensureSeats();
     const b = board();
     b.querySelectorAll('.seat').forEach(el => el.remove());
@@ -852,11 +782,14 @@
       const el = document.createElement('div');
       el.className = 'seat';
       el.dataset.id = seat.id;
-      el.style.left = seat.x + 'px';
-      el.style.top = seat.y + 'px';
+      el.style.left = seatPxX(seat) + 'px';
+      el.style.top = seatPxY(seat) + 'px';
       el.style.background = c.bg;
-      el.innerHTML =
-        `<span class="seat-name ${seat.name ? '' : 'empty'}" style="color:${seat.name ? c.text : 'rgba(0,0,0,0.25)'}">${seat.name || '名前'}</span>`;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'seat-name' + (seat.name ? '' : ' empty');
+      nameSpan.style.color = seat.name ? c.text : 'rgba(0,0,0,0.25)';
+      nameSpan.textContent = seat.name || '名前';
+      el.appendChild(nameSpan);
       el.addEventListener('mousedown', onMouseDown);
       el.addEventListener('click', onSeatClick);
       el.addEventListener('dblclick', onDblClick);
@@ -866,7 +799,33 @@
     });
 
     updateColorCounts();
+    checkDuplicateNames(); // タブ切替・読み込み・コピー・座席数変更の後も確認
+    scheduleAutoSave(); // 座席数変更・リセット・コピー・読み込み・タブ切替の後も自動保存
   }
+
+  document.getElementById('undo-btn').addEventListener('click', undo);
+  document.getElementById('redo-btn').addEventListener('click', redo);
+  document.addEventListener('keydown', function(e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return; // 入力欄は標準のUndoに任せる
+    if (!(e.ctrlKey || e.metaKey)) return;
+    var k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
+  });
+
+  // 画面サイズが変わったら、割合のまま座席を配置し直す
+  function layoutSeats() {
+    const seats = getSeats();
+    board().querySelectorAll('.seat').forEach(el => {
+      const seat = seats.find(s => s.id === parseInt(el.dataset.id));
+      if (!seat) return;
+      el.style.left = seatPxX(seat) + 'px';
+      el.style.top = seatPxY(seat) + 'px';
+    });
+  }
+  window.addEventListener('resize', layoutSeats);
+  window.addEventListener('orientationchange', function() { setTimeout(layoutSeats, 200); });
 
   // 使われている色ごとの座席数を集計して、色指定の下に表示する
   function updateColorCounts() {
@@ -877,7 +836,7 @@
       counts[key] = (counts[key] || 0) + 1;
     });
 
-    const order = ['default', 'blue', 'pink', 'green'];
+    const order = ['default', 'blue', 'pink', 'green']; // 黄色は集計に含めない
     const area = document.getElementById('color-usage-summary');
     if (!area) return;
     area.innerHTML = '';
@@ -900,6 +859,7 @@
   function applyColor(id) {
     const seat = getSeats().find(s => s.id === id);
     if (!seat) return;
+    if (seat.color !== selectedColor) pushUndo();
     seat.color = selectedColor;
     const el = getSeatEl(id);
     if (!el) return;
@@ -908,6 +868,7 @@
     const nameEl = el.querySelector('.seat-name');
     if (nameEl) nameEl.style.color = nameEl.classList.contains('empty') ? 'rgba(0,0,0,0.25)' : c.text;
     updateColorCounts();
+    scheduleAutoSave();
   }
 
   // 名前編集
@@ -922,15 +883,18 @@
     nameEl.replaceWith(input);
     setTimeout(() => { input.focus(); input.select(); }, 10);
     const commit = () => {
-      seat.name = input.value.trim();
+      const newName = input.value.trim();
+      if (newName !== seat.name) pushUndo();
+      seat.name = newName;
+      scheduleAutoSave();
       const c = COLOR_MAP[seat.color] || COLOR_MAP.default;
       const span = document.createElement('span');
       span.className = 'seat-name' + (seat.name ? '' : ' empty');
       span.style.color = seat.name ? c.text : 'rgba(0,0,0,0.25)';
       span.textContent = seat.name || '名前';
       if (input.parentNode) input.replaceWith(span);
-      // 重複チェック
-      if (seat.name) checkDuplicateNames();
+      // 重複チェック（重複が解消された場合は警告も消える）
+      checkDuplicateNames();
     };
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', ev => {
@@ -943,11 +907,25 @@
     input.addEventListener('touchend', ev => ev.stopPropagation());
   }
 
+  // ドラッグ中の座席を、画面座標に合わせて移動（割合で保存）
+  function moveSeatTo(clientX, clientY) {
+    const b = board();
+    const rect = b.getBoundingClientRect();
+    const R = boardRange();
+    const px = clamp(clientX - rect.left - b.clientLeft - dragOffX, 0, R.w);
+    const py = clamp(clientY - rect.top - b.clientTop - dragOffY, 0, R.h);
+    const seat = getSeats().find(s => s.id === dragging);
+    if (seat) { seat.x = px / R.w; seat.y = py / R.h; }
+    const el = getSeatEl(dragging);
+    if (el) { el.style.left = px + 'px'; el.style.top = py + 'px'; }
+  }
+
   // マウスイベント
   function onMouseDown(e) {
     if (e.target.tagName === 'INPUT') return;
     e.preventDefault();
     dragMoved = false;
+    dragSnap = snapshot();
     const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
     dragOffX = e.clientX - rect.left;
@@ -959,13 +937,7 @@
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     dragMoved = true;
-    const rect = board().getBoundingClientRect();
-    const x = clamp(e.clientX - rect.left - dragOffX, 0, rect.width - SW);
-    const y = clamp(e.clientY - rect.top - dragOffY, 0, rect.height - SH);
-    const seat = getSeats().find(s => s.id === dragging);
-    if (seat) { seat.x = x; seat.y = y; }
-    const el = getSeatEl(dragging);
-    if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+    moveSeatTo(e.clientX, e.clientY);
   });
 
   document.addEventListener('mouseup', () => {
@@ -973,16 +945,37 @@
     const el = getSeatEl(dragging);
     if (el) el.classList.remove('dragging');
     dragging = null;
+    if (dragMoved) { if (dragSnap) pushSnapshot(dragSnap); scheduleAutoSave(); }
+    dragSnap = null;
   });
+
+  // タップ判定：色の変更はダブルタップ待ち（DOUBLE_TAP_MS）の後に行う。
+  // 待ち時間内に2回目が来たら色は変えずに名前編集を開く。
+  let dragSnap = null;
+  const DOUBLE_TAP_MS = 280;
+  const pendingTap = {};
+  function handleSeatTap(el) {
+    const id = parseInt(el.dataset.id);
+    if (pendingTap[id]) {
+      clearTimeout(pendingTap[id]);
+      delete pendingTap[id];
+      openEdit(el, id);
+    } else {
+      pendingTap[id] = setTimeout(function() {
+        delete pendingTap[id];
+        applyColor(id);
+      }, DOUBLE_TAP_MS);
+    }
+  }
 
   function onSeatClick(e) {
     if (dragMoved) return;
-    applyColor(parseInt(e.currentTarget.dataset.id));
+    handleSeatTap(e.currentTarget);
   }
 
+  // 2回目のクリックは onSeatClick 側で処理するため、dblclick では何もしない
   function onDblClick(e) {
     e.stopPropagation();
-    openEdit(e.currentTarget, parseInt(e.currentTarget.dataset.id));
   }
 
   // タッチイベント
@@ -990,6 +983,7 @@
     if (e.target.tagName === 'INPUT') return;
     e.preventDefault();
     dragMoved = false;
+    dragSnap = snapshot();
     const el = e.currentTarget;
     const touch = e.touches[0];
     const rect = el.getBoundingClientRect();
@@ -1004,13 +998,7 @@
     e.preventDefault();
     dragMoved = true;
     const touch = e.touches[0];
-    const rect = board().getBoundingClientRect();
-    const x = clamp(touch.clientX - rect.left - dragOffX, 0, rect.width - SW);
-    const y = clamp(touch.clientY - rect.top - dragOffY, 0, rect.height - SH);
-    const seat = getSeats().find(s => s.id === dragging);
-    if (seat) { seat.x = x; seat.y = y; }
-    const el = getSeatEl(dragging);
-    if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+    moveSeatTo(touch.clientX, touch.clientY);
   }, { passive: false });
 
   document.addEventListener('touchend', () => {
@@ -1018,260 +1006,42 @@
     const el = getSeatEl(dragging);
     if (el) el.classList.remove('dragging');
     dragging = null;
+    if (dragMoved) { if (dragSnap) pushSnapshot(dragSnap); scheduleAutoSave(); }
+    dragSnap = null;
   });
 
   function onTouchEnd(e) {
     if (dragMoved) return;
-    const el = e.currentTarget;
-    const id = parseInt(el.dataset.id);
-    const now = Date.now();
-    if (lastTap[id] && now - lastTap[id] < 400) {
-      e.preventDefault();
-      openEdit(el, id);
-      lastTap[id] = 0;
-    } else {
-      applyColor(id);
-      lastTap[id] = now;
-    }
+    e.preventDefault();
+    handleSeatTap(e.currentTarget);
   }
 
-  // ========== メモ＋フォルダ ==========
-  // folderList: [{id, name}] — 全曜日・AM/PM共通
-  // allMemos[d][a]: { folderId: '内容テキスト', ... }
-  let folderList = [{ id: 'default', name: 'メモ' }];
-  let currentFolderId = 'default';
-  let allMemos = Array.from({length:5}, () => Array.from({length:2}, () => ({})));
-
-  function genFolderId() { return 'f' + Date.now() + Math.random().toString(36).slice(2,6); }
-
-  // 現在スロットのメモオブジェクト取得
-  function getMemoSlot() {
-    if (!allMemos[currentDay]) allMemos[currentDay] = [null, null];
-    if (!allMemos[currentDay][currentAmPm] || typeof allMemos[currentDay][currentAmPm] !== 'object') {
-      allMemos[currentDay][currentAmPm] = {};
-    }
-    return allMemos[currentDay][currentAmPm];
+  // ========== メモ ==========
+  // allMemos[d][a] = 文字列（曜日・AM/PMごとに1つ）
+  function normMemo(v) {
+    if (typeof v === 'string') return v;
+    if (v && typeof v === 'object') return Object.keys(v).map(function(k) { return v[k]; }).filter(Boolean).join('\n');
+    return '';
   }
+  function normalizeMemos(m) {
+    var out = [];
+    for (var d = 0; d < 5; d++) {
+      var day = (m && m[d]) || [];
+      out.push([normMemo(day[0]), normMemo(day[1])]);
+    }
+    return out;
+  }
+  let allMemos = normalizeMemos(null);
 
   function loadMemo() {
-    const slot = getMemoSlot();
-    document.getElementById('memo-textarea').value = slot[currentFolderId] || '';
+    document.getElementById('memo-textarea').value = allMemos[currentDay][currentAmPm] || '';
   }
-
-  let _memoAutoSaveTimer = null;
 
   function saveMemoState() {
-    const slot = getMemoSlot();
-    slot[currentFolderId] = document.getElementById('memo-textarea').value;
-    // デバウンス付き自動保存（1秒後にlocalStorageへ書き込み）
-    clearTimeout(_memoAutoSaveTimer);
-    _memoAutoSaveTimer = setTimeout(function() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, folders: folderList }));
-      } catch(e) {}
-    }, 1000);
+    allMemos[currentDay][currentAmPm] = document.getElementById('memo-textarea').value;
+    scheduleAutoSave(); // 自動保存ONのときだけ書き込まれる
   }
-
   document.getElementById('memo-textarea').addEventListener('input', saveMemoState);
-
-  // フォルダタブ描画
-  function renderFolderTabs() {
-    const container = document.getElementById('folder-tabs');
-    container.innerHTML = '';
-    folderList.forEach(f => {
-      const btn = document.createElement('button');
-      btn.className = 'folder-tab' + (f.id === currentFolderId ? ' active' : '');
-      btn.textContent = f.name;
-      btn.dataset.id = f.id;
-      btn.addEventListener('click', () => {
-        saveMemoState();
-        currentFolderId = f.id;
-        renderFolderTabs();
-        loadMemo();
-      });
-      // 長押しで編集
-      let pressTimer = null;
-      const startPress = () => { pressTimer = setTimeout(() => openFolderEditModal(f.id), 500); };
-      const endPress = () => { clearTimeout(pressTimer); };
-      btn.addEventListener('mousedown', startPress);
-      btn.addEventListener('mouseup', endPress);
-      btn.addEventListener('mouseleave', endPress);
-      btn.addEventListener('touchstart', startPress, { passive: true });
-      btn.addEventListener('touchend', endPress, { passive: true });
-      container.appendChild(btn);
-    });
-    // 選択タブにスクロール
-    const activeTab = container.querySelector('.folder-tab.active');
-    if (activeTab) activeTab.scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
-  }
-
-  // フォルダ追加・編集モーダル
-  let _editingFolderId = null;
-
-  function openFolderAddModal() {
-    _editingFolderId = null;
-    document.getElementById('folder-modal-title').textContent = '📁 新しいフォルダ';
-    document.getElementById('folder-name-input').value = '';
-    document.getElementById('folder-delete-btn').style.display = 'none';
-    showFolderModal();
-  }
-
-  function openFolderEditModal(id) {
-    const f = folderList.find(f => f.id === id);
-    if (!f) return;
-    _editingFolderId = id;
-    document.getElementById('folder-modal-title').textContent = '📁 フォルダを編集';
-    document.getElementById('folder-name-input').value = f.name;
-    // デフォルトフォルダは削除不可
-    document.getElementById('folder-delete-btn').style.display = (id === 'default') ? 'none' : 'block';
-    showFolderModal();
-  }
-
-  function showFolderModal() {
-    document.getElementById('folder-modal-overlay').style.display = 'block';
-    document.getElementById('folder-modal').style.display = 'block';
-    setTimeout(() => document.getElementById('folder-name-input').focus(), 80);
-  }
-
-  function closeFolderModal() {
-    document.getElementById('folder-modal-overlay').style.display = 'none';
-    document.getElementById('folder-modal').style.display = 'none';
-  }
-
-  document.getElementById('folder-add-btn').addEventListener('click', openFolderAddModal);
-  document.getElementById('folder-modal-overlay').addEventListener('click', closeFolderModal);
-  document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderModal);
-
-  document.getElementById('folder-save-btn').addEventListener('click', () => {
-    const name = document.getElementById('folder-name-input').value.trim();
-    if (!name) { document.getElementById('folder-name-input').focus(); return; }
-    if (_editingFolderId) {
-      // 編集
-      const f = folderList.find(f => f.id === _editingFolderId);
-      if (f) f.name = name;
-    } else {
-      // 新規追加
-      const newId = genFolderId();
-      folderList.push({ id: newId, name: name });
-      saveMemoState();
-      currentFolderId = newId;
-    }
-    closeFolderModal();
-    renderFolderTabs();
-    loadMemo();
-  });
-
-  document.getElementById('folder-delete-btn').addEventListener('click', () => {
-    const f = folderList.find(f => f.id === _editingFolderId);
-    if (!f || f.id === 'default') return;
-    if (!confirm(`「${f.name}」を削除しますか？\nメモの内容もすべて消えます。`)) return;
-    // 全スロットからこのフォルダのメモ削除
-    for (let d = 0; d < 5; d++) for (let a = 0; a < 2; a++) {
-      if (allMemos[d][a] && typeof allMemos[d][a] === 'object') delete allMemos[d][a][_editingFolderId];
-    }
-    folderList = folderList.filter(f => f.id !== _editingFolderId);
-    if (currentFolderId === _editingFolderId) currentFolderId = folderList[0]?.id || 'default';
-    closeFolderModal();
-    renderFolderTabs();
-    loadMemo();
-  });
-
-  // Enterキーで保存
-  document.getElementById('folder-name-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('folder-save-btn').click();
-    e.stopPropagation();
-  });
-
-  // ========== メモ検索 ==========
-  let _searchOpen = false;
-
-  function openMemoSearch() {
-    _searchOpen = true;
-    const bar = document.getElementById('memo-search-bar');
-    bar.classList.add('open');
-    document.getElementById('folder-tab-row').style.display = 'none';
-    document.getElementById('memo-textarea').style.display = 'none';
-    document.getElementById('memo-search-input').value = '';
-    document.getElementById('memo-search-results').classList.remove('open');
-    document.getElementById('memo-search-results').innerHTML = '';
-    document.getElementById('memo-search-btn').textContent = '✕';
-    setTimeout(() => document.getElementById('memo-search-input').focus(), 80);
-  }
-
-  function closeMemoSearch() {
-    _searchOpen = false;
-    document.getElementById('memo-search-bar').classList.remove('open');
-    document.getElementById('folder-tab-row').style.display = '';
-    document.getElementById('memo-textarea').style.display = '';
-    document.getElementById('memo-search-results').classList.remove('open');
-    document.getElementById('memo-search-results').innerHTML = '';
-    document.getElementById('memo-search-btn').textContent = '🔍';
-  }
-
-  document.getElementById('memo-search-btn').addEventListener('click', () => {
-    _searchOpen ? closeMemoSearch() : openMemoSearch();
-  });
-
-  document.getElementById('memo-search-clear').addEventListener('click', () => {
-    document.getElementById('memo-search-input').value = '';
-    document.getElementById('memo-search-results').classList.remove('open');
-    document.getElementById('memo-search-results').innerHTML = '';
-    document.getElementById('memo-search-input').focus();
-  });
-
-  document.getElementById('memo-search-input').addEventListener('input', function() {
-    const q = this.value.trim();
-    const resultsEl = document.getElementById('memo-search-results');
-    if (!q) {
-      resultsEl.classList.remove('open');
-      resultsEl.innerHTML = '';
-      return;
-    }
-    // 現在のメモを保存してから検索
-    saveMemoState();
-    const slot = getMemoSlot();
-    const lq = q.toLowerCase();
-    const hits = [];
-    folderList.forEach(f => {
-      const text = slot[f.id] || '';
-      const idx = text.toLowerCase().indexOf(lq);
-      if (idx !== -1) {
-        // スニペット生成（前後30文字）
-        const start = Math.max(0, idx - 30);
-        const end = Math.min(text.length, idx + q.length + 30);
-        const before = escapeHtml(text.slice(start, idx));
-        const match  = escapeHtml(text.slice(idx, idx + q.length));
-        const after  = escapeHtml(text.slice(idx + q.length, end));
-        const snippet = (start > 0 ? '…' : '') + before + '<mark>' + match + '</mark>' + after + (end < text.length ? '…' : '');
-        hits.push({ folder: f, snippet, idx });
-      }
-    });
-
-    resultsEl.classList.add('open');
-    if (hits.length === 0) {
-      resultsEl.innerHTML = '<div class="search-no-result">「' + escapeHtml(q) + '」は見つかりませんでした</div>';
-    } else {
-      resultsEl.innerHTML = hits.map(h =>
-        `<div class="search-result-item" data-fid="${h.folder.id}">
-          <div class="search-result-folder">📁 ${escapeHtml(h.folder.name)}</div>
-          <div class="search-result-snippet">${h.snippet}</div>
-        </div>`
-      ).join('');
-      resultsEl.querySelectorAll('.search-result-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const fid = el.dataset.fid;
-          currentFolderId = fid;
-          closeMemoSearch();
-          renderFolderTabs();
-          loadMemo();
-        });
-      });
-    }
-  });
-
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
 
   // ========== 重複名前チェック ==========
   var _dupWarningTimer = null;
@@ -1279,7 +1049,6 @@
   function checkDuplicateNames() {
     const seats = allSeats[currentDay] && allSeats[currentDay][currentAmPm];
     if (!seats) return;
-    // 空白以外の名前をカウント
     const counts = {};
     seats.forEach(function(s) {
       if (!s.name) return;
@@ -1294,7 +1063,6 @@
     const lines = dups.map(function(n) { return `「${n}」が ${counts[n]} か所`; }).join('　／　');
     document.getElementById('dup-warning-names').textContent = lines;
     banner.style.display = 'block';
-    // 8秒後に自動で閉じる
     clearTimeout(_dupWarningTimer);
     _dupWarningTimer = setTimeout(function() { banner.style.display = 'none'; }, 8000);
   }
@@ -1309,14 +1077,12 @@
   const memoOverlay = document.getElementById('memo-overlay');
 
   function openMemo() {
-    renderFolderTabs();
     loadMemo();
     memoPanel.classList.add('open');
     memoOverlay.classList.add('show');
   }
   function closeMemo() {
     saveMemoState();
-    if (_searchOpen) closeMemoSearch();
     memoPanel.classList.remove('open');
     memoOverlay.classList.remove('show');
   }
@@ -1338,11 +1104,12 @@
     }
   }, { passive: true });
 
-  // 保存・読込（座席・メモ・フォルダをまとめて保存／旧フォーマットの座席のみのデータも読み込み可能）
+  // 保存・読込（座席・メモ）
   function saveData() {
     saveMemoState();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, folders: folderList }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seats: allSeats, memos: allMemos, coord: 'r' }));
+      markSaved();
       const t = document.getElementById('toast');
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 1800);
@@ -1356,21 +1123,19 @@
         const parsed = JSON.parse(raw);
         if (parsed && parsed.seats) {
           if (Array.isArray(parsed.seats) && parsed.seats.length === 5) allSeats = parsed.seats;
-          // メモ移行: 旧フォーマット(string) → 新フォーマット(object)
-          if (parsed.memos && Array.isArray(parsed.memos) && parsed.memos.length === 5) {
-            allMemos = parsed.memos.map(dayArr =>
-              (dayArr || ['','']).map(slot => {
-                if (typeof slot === 'string') return { default: slot };
-                if (slot && typeof slot === 'object') return slot;
-                return {};
-              })
-            );
+          allMemos = normalizeMemos(parsed.memos);
+          // 旧形式（px座標）で保存されたデータは、今の画面サイズを基準に割合へ変換する
+          if (parsed.coord !== 'r') {
+            const R = boardRange();
+            allSeats.forEach(function(day) {
+              (day || []).forEach(function(seats) {
+                (seats || []).forEach(function(seat) {
+                  seat.x = clamp01(seat.x / R.w);
+                  seat.y = clamp01(seat.y / R.h);
+                });
+              });
+            });
           }
-          if (parsed.folders && Array.isArray(parsed.folders) && parsed.folders.length > 0) {
-            folderList = parsed.folders;
-          }
-        } else if (Array.isArray(parsed) && parsed.length === 5) {
-          allSeats = parsed;
         }
       }
     } catch(e) {}
@@ -1387,7 +1152,7 @@
       render();
       document.getElementById('memo-panel-title').textContent =
         `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
-      if (memoPanel.classList.contains('open')) { renderFolderTabs(); loadMemo(); }
+      if (memoPanel.classList.contains('open')) loadMemo();
     });
   });
 
@@ -1398,7 +1163,7 @@
       render();
       document.getElementById('memo-panel-title').textContent =
         `📝 メモ — ${DAY_NAMES[currentDay]} ${currentAmPm === 0 ? 'AM' : 'PM'}`;
-      if (memoPanel.classList.contains('open')) { renderFolderTabs(); loadMemo(); }
+      if (memoPanel.classList.contains('open')) loadMemo();
     });
   });
 
@@ -1412,135 +1177,29 @@
 
   document.getElementById('save-btn').addEventListener('click', saveData);
 
-  // 曜日別QRコード・テキスト共通エンコード
-  // a=0:AM a=1:PM a=2:1日分(AM+PM まとめて)
-  // データが入っている席（名前あり or 色が既定色以外）だけを送ることで大幅に軽量化する
-  var UNIT_SEP = '\u001f'; // ほぼ絶対に本文に含まれない制御文字を区切りに使う
-
-  // 旧・スパース形式（idx:name:color:rx:ry）… v7/v8 用、後方互換のため残す
-  function seatsToSparseStr(seats, W, H) {
-    var parts = [];
-    (seats || []).forEach(function(s, i) {
-      if (!s) return;
-      var hasName = !!s.name;
-      var hasColor = s.color && s.color !== 'default';
-      if (!hasName && !hasColor) return; // 空席はスキップ（データ量削減）
-      var rx = Math.round((s.x / W) * 99);
-      var ry = Math.round((s.y / H) * 99);
-      parts.push(i + ':' + (s.name || '') + ':' + (COLOR_SHORT[s.color] || '0') + ':' + rx + ':' + ry);
-    });
-    return parts.join('|');
-  }
-
-  // 新・超圧縮形式：座標／席番号／色をすべて36進数1文字に固定し、区切り文字(:)を最小限にする
-  // "idx36:name:色1文字+x1文字+y1文字" … 従来より2〜4割ほど軽量
-  function seatsToCompact2Str(seats, W, H) {
-    var parts = [];
-    (seats || []).forEach(function(s, i) {
-      if (!s) return;
-      var hasName = !!s.name;
-      var hasColor = s.color && s.color !== 'default';
-      if (!hasName && !hasColor) return; // 空席はスキップ
-      var rx = Math.round((s.x / W) * 35).toString(36);   // 0-35 → 36進数1文字
-      var ry = Math.round((s.y / H) * 35).toString(36);
-      var idx36 = i.toString(36);
-      var color = COLOR_SHORT[s.color] || '0';
-      parts.push(idx36 + ':' + (s.name || '') + ':' + color + rx + ry);
-    });
-    return parts.join('|');
-  }
-  function buildSeatsFromCompact2Str(str, W, H) {
-    var base = makeSeats();
-    if (str) {
-      str.split('|').forEach(function(p) {
-        var firstColon = p.indexOf(':');
-        var lastColon = p.lastIndexOf(':');
-        if (firstColon < 0 || lastColon <= firstColon) return;
-        var idx = parseInt(p.slice(0, firstColon), 36);
-        var name = p.slice(firstColon + 1, lastColon);
-        var tail = p.slice(lastColon + 1); // 色1文字 + x1文字 + y1文字
-        if (isNaN(idx) || idx < 0 || idx >= base.length || tail.length < 3) return;
-        var color = tail.charAt(0);
-        var rx = parseInt(tail.charAt(1), 36);
-        var ry = parseInt(tail.charAt(2), 36);
-        base[idx].name = name;
-        base[idx].color = COLOR_LONG[color] || 'default';
-        if (!isNaN(rx)) base[idx].x = Math.round((rx / 35) * W);
-        if (!isNaN(ry)) base[idx].y = Math.round((ry / 35) * H);
-      });
-    }
-    return base;
-  }
-
-  function encodeDayData(d, a) {
-    var b = board();
-    var W = b.clientWidth, H = b.clientHeight;
-    if (a === 2) {
-      // 1日分：AM/PMをまとめた最軽量フォーマット(vA, 超圧縮)
-      return '~A' + d + UNIT_SEP +
-        seatsToCompact2Str(allSeats[d][0], W, H) + UNIT_SEP +
-        seatsToCompact2Str(allSeats[d][1], W, H) + UNIT_SEP +
-        (allMemos[d][0] || '') + UNIT_SEP +
-        (allMemos[d][1] || '');
-    }
-    var seats = allSeats[d][a];
-    return '~9' + d + a + UNIT_SEP + seatsToCompact2Str(seats, W, H) + UNIT_SEP + (allMemos[d][a] || '');
-  }
-
-  // 別アプリのQRコードリーダーでも中身がそのまま読めるよう、制御文字を使わない
-  // 通常のJSONテキストとしてエンコードする（QRの容量に余裕があるため圧縮より読みやすさを優先）
+  // 1日分（曜日・AM/PM単位）のデータをJSONテキスト化（合言葉共有で使用）
   function encodeDayDataReadable(d, a) {
     var b = board();
     var W = b.clientWidth, H = b.clientHeight;
     var seats = allSeats[d][a] || makeSeats();
     var parts = seats.map(function(s) {
       var c = COLOR_SHORT[s.color] || '0';
-      var rx = Math.round((s.x / W) * 99);
-      var ry = Math.round((s.y / H) * 99);
+      var rx = Math.round(clamp01(s.x) * 99);
+      var ry = Math.round(clamp01(s.y) * 99);
       return (s.name || '') + ':' + c + ':' + rx + ':' + ry;
     });
     return JSON.stringify({ v: 5, day: d, ampm: a, s: parts.join('|'), m: allMemos[d][a] || '' });
   }
 
-  // 新形式(~7/~8/~9/~A)の文字列をデコードして、旧形式と同じ構造のオブジェクトに変換
-  function parseCompactPayload(t) {
-    var body = t.slice(1); // 先頭の '~' を除去
-    var ver = body.charAt(0);
-    var parts = body.slice(1).split(UNIT_SEP);
-    if (ver === '7' || ver === '9') {
-      // "day" + "ampm" + US + s + US + m
-      var head = parts[0];
-      var day = parseInt(head.charAt(0));
-      var ampm = parseInt(head.charAt(1));
-      return { v: (ver === '9' ? 9 : 7), day: day, ampm: ampm, s: parts[1] || '', m: parts[2] !== undefined ? parts[2] : '' };
-    }
-    if (ver === '8' || ver === 'A') {
-      var d = parseInt(parts[0]);
-      return { v: (ver === 'A' ? 10 : 8), d: d, s0: parts[1] || '', s1: parts[2] || '', m0: parts[3] || '', m1: parts[4] || '' };
-    }
-    throw new Error('unknown compact version');
-  }
-
-  // 受け取ったテキスト(QR由来の生データ／コピペ由来のBase64)を判別してデコード
+  // 受け取ったテキスト（JSON または Base64）をデコード
   function decodePayloadText(text) {
     var t = (text || '').trim();
     if (!t) throw new Error('empty');
-    // 新形式：'~' 始まりは非JSON・スパース圧縮の生データ（QRはこの形式を直接埋め込む）
-    if (t.charAt(0) === '~') {
-      return parseCompactPayload(t);
-    }
-    // 旧形式：QRコードは容量節約のため生JSONで送信されていた
     if (t.charAt(0) === '{') {
-      try { return JSON.parse(t); } catch(e) { /* フォールスルーしてBase64として試す */ }
+      try { return JSON.parse(t); } catch(e) { /* Base64として試す */ }
     }
-    // テキスト共有はBase64
-    var decodedStr = decodeURIComponent(escape(atob(t)));
-    if (decodedStr.charAt(0) === '~') return parseCompactPayload(decodedStr);
-    return JSON.parse(decodedStr);
+    return JSON.parse(decodeURIComponent(escape(atob(t))));
   }
-
-  // 送受信フロー：現在選択中の方向（'send' または 'recv'）
-  var _transferDir = 'send';
 
   // データを圧縮（名前と色のみ）
   // 色の短縮マップ
@@ -1559,8 +1218,8 @@
         // 名前・色・位置比率(0-99)を圧縮
         var parts = seats.map(function(s) {
           var c = COLOR_SHORT[s.color] || '0';
-          var rx = Math.round((s.x / W) * 99);
-          var ry = Math.round((s.y / H) * 99);
+          var rx = Math.round(clamp01(s.x) * 99);
+          var ry = Math.round(clamp01(s.y) * 99);
           return (s.name || '') + ':' + c + ':' + rx + ':' + ry;
         });
         dayData.push(parts.join('|'));
@@ -1594,8 +1253,8 @@
               var colorCode = seg[1] || '0';
               var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
               var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
-              var x = rx !== null ? Math.round((rx / 99) * W) : null;
-              var y = ry !== null ? Math.round((ry / 99) * H) : null;
+              var x = rx !== null ? clamp01(rx / 99) : null;
+              var y = ry !== null ? clamp01(ry / 99) : null;
               if (i < base.length) {
                 base[i].name = name;
                 base[i].color = COLOR_LONG[colorCode] || 'default';
@@ -1604,8 +1263,8 @@
               } else {
                 base.push({
                   id: i + 1,
-                  x: x !== null ? x : Math.round((W - SW) / 2),
-                  y: y !== null ? y : Math.round((H - SH) / 2),
+                  x: x !== null ? x : 0.5,
+                  y: y !== null ? y : 0.5,
                   name: name,
                   color: COLOR_LONG[colorCode] || 'default'
                 });
@@ -1617,71 +1276,6 @@
         expanded.push(dayData);
       }
       return { seats: expanded, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    // v4フォーマット（後方互換・絶対座標）
-    if (obj.v === 4 && obj.c) {
-      var expanded4 = [];
-      for (var d4 = 0; d4 < 5; d4++) {
-        var dayData4 = [];
-        for (var a4 = 0; a4 < 2; a4++) {
-          var str4 = obj.c[d4][a4];
-          var base4 = makeSeats();
-          if (str4) {
-            str4.split('|').forEach(function(p, i) {
-              var seg = p.split(':');
-              if (i < base4.length) {
-                base4[i].name = seg[0] || '';
-                base4[i].color = COLOR_LONG[seg[1]] || 'default';
-                if (seg[2]) base4[i].x = parseInt(seg[2]);
-                if (seg[3]) base4[i].y = parseInt(seg[3]);
-              }
-            });
-          }
-          dayData4.push(base4);
-        }
-        expanded4.push(dayData4);
-      }
-      return { seats: expanded4, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    // v3フォーマット（後方互換）
-    if (obj.v === 3 && obj.c) {
-      var expanded3 = [];
-      for (var d3 = 0; d3 < 5; d3++) {
-        var dayData3 = [];
-        for (var a3 = 0; a3 < 2; a3++) {
-          var base3 = makeSeats();
-          if (obj.c[d3][a3]) {
-            obj.c[d3][a3].split('|').forEach(function(p, i) {
-              var idx = p.lastIndexOf(':');
-              if (i < base3.length) {
-                base3[i].name = idx >= 0 ? p.substring(0, idx) : p;
-                base3[i].color = COLOR_LONG[idx >= 0 ? p.substring(idx+1) : '0'] || 'default';
-              }
-            });
-          }
-          dayData3.push(base3);
-        }
-        expanded3.push(dayData3);
-      }
-      return { seats: expanded3, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
-    }
-    // v2フォーマット（後方互換）
-    if (obj.v === 2 && obj.c) {
-      var expanded2 = [];
-      for (var d2 = 0; d2 < 5; d2++) {
-        var dayData2 = [];
-        for (var a2 = 0; a2 < 2; a2++) {
-          var base2 = makeSeats();
-          if (obj.c[d2][a2]) {
-            obj.c[d2][a2].forEach(function(item, i) {
-              if (i < base2.length) { base2[i].name = item[0]||''; base2[i].color = item[1]||'default'; }
-            });
-          }
-          dayData2.push(base2);
-        }
-        expanded2.push(dayData2);
-      }
-      return { seats: expanded2, memos: obj.m || Array.from({length:5}, function() { return ['','']; }) };
     }
     return null;
   }
@@ -1726,18 +1320,6 @@
       document.getElementById(id).style.display = 'none';
     });
     document.getElementById('method-' + view + '-view').style.display = 'block';
-  }
-
-  // QRコード生成ヘルパー（qrcode-generatorライブラリ／Type1〜40まで自動対応・大幅に余裕あり）
-  // ※メモ共有（リンク・テキストのQR表示）で使用
-  function renderQrInto(area, text) {
-    area.innerHTML = '';
-    var qr = qrcode(0, 'L'); // typeNumber=0で自動選択
-    qr.addData(text);
-    qr.make();
-    area.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4 });
-    var svg = area.querySelector('svg');
-    if (svg) { svg.style.width = '100%'; svg.style.maxWidth = '220px'; svg.style.height = 'auto'; }
   }
 
   document.getElementById('method-modal-close').addEventListener('click', closeMethodModal);
@@ -1819,144 +1401,57 @@
     reader.readAsText(file, 'UTF-8');
   });
 
-  // 読み込むボタン
+  // 読み込むボタン（v5形式：全曜日一括 or 1日分）
+  function seatsFromStr(str) {
+    var b = board();
+    var W = b.clientWidth, H = b.clientHeight;
+    var base = makeSeats();
+    if (str) {
+      str.split('|').forEach(function(p, i) {
+        if (i >= base.length) return;
+        var seg = p.split(':');
+        base[i].name = seg[0] || '';
+        base[i].color = COLOR_LONG[seg[1] || '0'] || 'default';
+        if (seg[2]) base[i].x = clamp01(parseInt(seg[2]) / 99);
+        if (seg[3]) base[i].y = clamp01(parseInt(seg[3]) / 99);
+      });
+    }
+    return base;
+  }
+
   document.getElementById('method-import-do-btn').addEventListener('click', function() {
     var text = document.getElementById('method-import-text').value.trim();
     if (!text) { alert('テキストを貼り付けてください'); return; }
     try {
       var decoded = decodePayloadText(text);
-      if (!decoded) throw new Error();
+      if (!decoded || decoded.v !== 5) throw new Error();
 
-      // 受信データ自体の内容から「一括」か「曜日別」かを自動判定する
-      // （一括：'c'圧縮形式 or 'seats'構造を持つ／曜日別：day・d・ampmなどを持つ）
-      var isBulkData = ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) || decoded.seats;
-
-      if (isBulkData) {
+      if (decoded.c) {
+        // 全曜日一括
         if (!confirm('受け取ったデータを読み込みますか？\n現在のデータはすべて上書きされます。')) return;
-        if ((decoded.v === 5 || decoded.v === 4 || decoded.v === 3 || decoded.v === 2) && decoded.c) {
-          var result = expandData(decoded);
-          if (!result) throw new Error();
-          allSeats = result.seats;
-          allMemos = result.memos;
-        } else if (decoded.seats) {
-          allSeats = decoded.seats;
-          for (var d3 = 0; d3 < 5; d3++) for (var a3 = 0; a3 < 2; a3++) { if (!allSeats[d3][a3]) allSeats[d3][a3] = makeSeats(); }
-          if (decoded.memos) allMemos = decoded.memos;
-        } else throw new Error();
-      } else {
-        // 曜日別・受信：対象は選択させず、受信データ自身が持つ曜日・AM/PM情報から自動的に振り分ける
+        var result = expandData(decoded);
+        if (!result) throw new Error();
+        pushUndo();
+        allSeats = result.seats;
+        allMemos = normalizeMemos(result.memos);
+      } else if (decoded.s !== undefined && decoded.day !== undefined) {
+        // 1日分（曜日・AM/PM自動振り分け）
         var dayNames2 = ['月','火','水','木','金'];
-        function apLabel2(ap) { return ap === 0 ? 'AM' : (ap === 1 ? 'PM' : '（1日分）'); }
-
-        var toDay, fromLabel2;
-        if ((decoded.v === 6 || decoded.v === 8 || decoded.v === 10) && decoded.d !== undefined) {
-          toDay = decoded.d;
-          fromLabel2 = dayNames2[toDay] + '（1日分）';
-        } else if (decoded.day !== undefined) {
-          toDay = decoded.day;
-          fromLabel2 = dayNames2[toDay] + apLabel2(decoded.ampm);
-        } else {
-          throw new Error();
-        }
-
-        if (!confirm(fromLabel2 + ' のデータを読み込みますか？')) return;
-        var b2 = board();
-        var W2 = b2.clientWidth, H2 = b2.clientHeight;
-
-        function buildSeatsFromStr(str, v) {
-          var base = makeSeats();
-          if (str) {
-            str.split('|').forEach(function(p, i) {
-              var seg = p.split(':');
-              var name = seg[0] || '';
-              var colorCode = seg[1] || '0';
-              var rx = seg[2] !== undefined ? parseInt(seg[2]) : null;
-              var ry = seg[3] !== undefined ? parseInt(seg[3]) : null;
-              var x = rx !== null ? ((v === 5 || v === 6) ? Math.round((rx/99)*W2) : rx) : null;
-              var y = ry !== null ? ((v === 5 || v === 6) ? Math.round((ry/99)*H2) : ry) : null;
-              if (i < base.length) {
-                base[i].name = name;
-                base[i].color = COLOR_LONG[colorCode] || 'default';
-                if (x !== null) base[i].x = x;
-                if (y !== null) base[i].y = y;
-              }
-            });
-          }
-          return base;
-        }
-
-        // v7/v8：スパース形式（"idx:name:color:rx:ry" のみを持つ席の一覧）
-        function buildSeatsFromSparseStr(str) {
-          var base = makeSeats();
-          if (str) {
-            str.split('|').forEach(function(p) {
-              var seg = p.split(':');
-              var i = parseInt(seg[0]);
-              if (isNaN(i) || i < 0 || i >= base.length) return;
-              var name = seg[1] || '';
-              var colorCode = seg[2] || '0';
-              var rx = seg[3] !== undefined ? parseInt(seg[3]) : null;
-              var ry = seg[4] !== undefined ? parseInt(seg[4]) : null;
-              base[i].name = name;
-              base[i].color = COLOR_LONG[colorCode] || 'default';
-              if (rx !== null) base[i].x = Math.round((rx / 99) * W2);
-              if (ry !== null) base[i].y = Math.round((ry / 99) * H2);
-            });
-          }
-          return base;
-        }
-
-        if ((decoded.v === 6 || decoded.v === 8 || decoded.v === 10) && (decoded.s0 !== undefined || decoded.s1 !== undefined)) {
-          // 1日分（AM+PMまとめて）データ
-          if (decoded.v === 10) {
-            allSeats[toDay][0] = buildSeatsFromCompact2Str(decoded.s0, W2, H2);
-            allSeats[toDay][1] = buildSeatsFromCompact2Str(decoded.s1, W2, H2);
-          } else {
-            allSeats[toDay][0] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s0) : buildSeatsFromStr(decoded.s0, 6);
-            allSeats[toDay][1] = decoded.v === 8 ? buildSeatsFromSparseStr(decoded.s1) : buildSeatsFromStr(decoded.s1, 6);
-          }
-          allMemos[toDay][0] = decoded.m0 || '';
-          allMemos[toDay][1] = decoded.m1 || '';
-          if (toDay === currentDay) render();
-        } else if (decoded.v === 9 && decoded.s !== undefined) {
-          // AM または PM 単体データ（超圧縮形式）
-          var destAmPm9 = decoded.ampm !== undefined ? decoded.ampm : 0;
-          allSeats[toDay][destAmPm9] = buildSeatsFromCompact2Str(decoded.s, W2, H2);
-          if (decoded.m !== undefined) allMemos[toDay][destAmPm9] = decoded.m;
-          if (toDay === currentDay && destAmPm9 === currentAmPm) render();
-        } else if (decoded.v === 7 && decoded.s !== undefined) {
-          // AM または PM 単体データ（スパース形式）
-          var destAmPm7 = decoded.ampm !== undefined ? decoded.ampm : 0;
-          allSeats[toDay][destAmPm7] = buildSeatsFromSparseStr(decoded.s);
-          if (decoded.m !== undefined) allMemos[toDay][destAmPm7] = decoded.m;
-          if (toDay === currentDay && destAmPm7 === currentAmPm) render();
-        } else if ((decoded.v === 5 || decoded.v === 4) && decoded.s) {
-          // AM または PM 単体データ
-          var destAmPm = decoded.ampm !== undefined ? decoded.ampm : 0;
-          allSeats[toDay][destAmPm] = buildSeatsFromStr(decoded.s, decoded.v);
-          if (decoded.m !== undefined) allMemos[toDay][destAmPm] = decoded.m;
-          if (toDay === currentDay && destAmPm === currentAmPm) render();
-        } else if (decoded.seats) {
-          var destAmPm2 = decoded.ampm !== undefined ? decoded.ampm : 0;
-          allSeats[toDay][destAmPm2] = decoded.seats;
-          if (decoded.memo !== undefined) allMemos[toDay][destAmPm2] = decoded.memo;
-          if (toDay === currentDay) render();
-        } else throw new Error();
-      }
+        var toDay = decoded.day;
+        var toAmPm = decoded.ampm !== undefined ? decoded.ampm : 0;
+        if (!confirm(dayNames2[toDay] + (toAmPm === 0 ? 'AM' : 'PM') + ' のデータを読み込みますか？')) return;
+        pushUndo();
+        allSeats[toDay][toAmPm] = seatsFromStr(decoded.s);
+        if (decoded.m !== undefined) allMemos[toDay][toAmPm] = normMemo(decoded.m);
+      } else throw new Error();
 
       render();
+      loadMemo();
       closeMethodModal();
-      settingsPanel.style.display = 'none';
-      settingsOverlay.style.display = 'none';
+      closeDrawer();
       alert('データを読み込みました！');
     } catch(e) { alert('データが正しくありません。正しいデータを貼り付けてください。'); }
   });
-
-  // hidden import-text for legacy compat
-  var _importTextEl = document.createElement('textarea');
-  _importTextEl.id = 'import-text';
-  _importTextEl.style.display = 'none';
-  document.body.appendChild(_importTextEl);
 
   // 座席数変更
   function updateSeatCountLabel() {
@@ -1968,11 +1463,12 @@
   document.getElementById('seat-plus').addEventListener('click', function() {
     var seats = getSeats();
     var b = board();
+    pushUndo();
     var newId = seats.length > 0 ? Math.max.apply(null, seats.map(function(s){ return s.id; })) + 1 : 1;
     seats.push({
       id: newId,
-      x: Math.round((b.clientWidth - SW) / 2),
-      y: Math.round((b.clientHeight - SH) / 2),
+      x: 0.5,
+      y: 0.5,
       name: '',
       color: 'default'
     });
@@ -1984,242 +1480,21 @@
     var seats = getSeats();
     if (seats.length <= 1) { alert('これ以上減らせません'); return; }
     if (!confirm('最後に追加した座席を削除しますか？')) return;
+    pushUndo();
     seats.pop();
     render();
     updateSeatCountLabel();
   });
 
-  // 設定パネルを開くたびに座席数を更新
-  document.getElementById('settings-btn').addEventListener('click', function() {
-    updateSeatCountLabel();
-  });
-
   document.getElementById('reset-btn').addEventListener('click', function() {
     if (!confirm('現在のページの座席をリセットしますか？')) return;
+    pushUndo();
     allSeats[currentDay][currentAmPm] = makeSeats();
     render();
-    settingsPanel.style.display = 'none';
-    settingsOverlay.style.display = 'none';
+    closeDrawer();
   });
 
-  // ========== メモ共有（テキスト＋リンク） ==========
-  var _shareLinkData = null;
-  var _shareEncodedText = ''; // テキストタブ用にQRコード化する内容（Base64エンコード済みデータ）
-
-  // 現在アクティブなタブの内容（テキスト or リンクURL）を元にQRコードを描画する
-  // モーダルを開いた時／再発行時／タブ切替時のいずれでも呼び出され、表示を常に最新化する
-  function renderShareQr(tab) {
-    var area = document.getElementById('qr-code-area');
-    var errEl = document.getElementById('qr-code-error');
-    area.innerHTML = ''; // 前回の描画をクリアしてから再生成する（表示が古いまま残るのを防ぐ）
-    errEl.style.display = 'none';
-
-    var content = tab === 'link'
-      ? (_shareLinkData ? _shareLinkData.url : '')
-      : _shareEncodedText;
-    if (!content) return;
-
-    try {
-      renderQrInto(area, content);
-    } catch (e) {
-      area.innerHTML = '';
-      errEl.style.display = 'block';
-    }
-  }
-
-  function switchShareTab(tab) {
-    ['text','link'].forEach(function(t) {
-      var isActive = t === tab;
-      document.getElementById('share-' + t + '-view').style.display = isActive ? 'block' : 'none';
-      var btn = document.getElementById('share-tab-' + t);
-      btn.style.background   = isActive ? '#2a2a2a' : '#f0ede8';
-      btn.style.color        = isActive ? '#fff'    : '#888';
-      btn.style.borderColor  = isActive ? '#2a2a2a' : '#ddd';
-    });
-    renderShareQr(tab);
-  }
-
-  document.getElementById('memo-share-link-btn').addEventListener('click', function() {
-    saveMemoState();
-    const slot = getMemoSlot();
-    const text = slot[currentFolderId] || '';
-    if (!text.trim()) { alert('メモが空です'); return; }
-    const folder = folderList.find(f => f.id === currentFolderId);
-    const folderName = folder ? folder.name : 'メモ';
-
-    const payload = { v: 1, fn: folderName, t: text };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    const linkUrl = location.href.split('?')[0].split('#')[0] + '?memo=' + encoded;
-
-    const DAY_NAMES_LOCAL = ['月','火','水','木','金'];
-    document.getElementById('share-link-desc').textContent =
-      `📁 ${folderName} ／ ${DAY_NAMES_LOCAL[currentDay]}曜${currentAmPm===0?'AM':'PM'}`;
-
-    // テキスト
-    document.getElementById('share-text-output').value = encoded;
-    _shareEncodedText = encoded;
-
-    // リンク
-    document.getElementById('share-link-input').value = linkUrl;
-    _shareLinkData = { url: linkUrl, name: folderName };
-
-    switchShareTab('text'); // タブ切替と同時にQRコードも再発行される
-    document.getElementById('share-link-modal-overlay').style.display = 'block';
-    document.getElementById('share-link-modal').style.display = 'block';
-  });
-
-  document.getElementById('share-link-close').addEventListener('click', function() {
-    closeShareLinkModal();
-  });
-  document.getElementById('share-link-modal-overlay').addEventListener('click', function() {
-    closeShareLinkModal();
-  });
-
-  function closeShareLinkModal() {
-    document.getElementById('share-link-modal-overlay').style.display = 'none';
-    document.getElementById('share-link-modal').style.display = 'none';
-    // 次回開いた時に古いQRコードが一瞬表示されないようクリアしておく
-    document.getElementById('qr-code-area').innerHTML = '';
-    document.getElementById('qr-code-error').style.display = 'none';
-  }
-
-  document.getElementById('share-text-copy-btn').addEventListener('click', function() {
-    var ta = document.getElementById('share-text-output');
-    ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    document.getElementById('share-text-copy-btn').textContent = '✅ コピーしました！';
-    setTimeout(function() { document.getElementById('share-text-copy-btn').textContent = '📋 コピーする'; }, 2000);
-  });
-
-  document.getElementById('share-text-native-btn').addEventListener('click', async function() {
-    var text = document.getElementById('share-text-output').value;
-    if (!text) return;
-    if (navigator.share) {
-      try { await navigator.share({ text: text }); return; } catch(e) { if (e.name === 'AbortError') return; }
-    }
-    var ta = document.getElementById('share-text-output');
-    ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    alert('テキストをコピーしました！');
-  });
-
-  // 📥 テキストで受け取るシート
-  document.getElementById('memo-recv-text-btn').addEventListener('click', function() {
-    document.getElementById('memo-recv-text-input').value = '';
-    document.getElementById('memo-recv-text-overlay').style.display = 'block';
-    document.getElementById('memo-recv-text-sheet').style.display = 'block';
-    setTimeout(function() { document.getElementById('memo-recv-text-input').focus(); }, 80);
-  });
-
-  function closeMemoRecvTextSheet() {
-    document.getElementById('memo-recv-text-overlay').style.display = 'none';
-    document.getElementById('memo-recv-text-sheet').style.display = 'none';
-  }
-  document.getElementById('memo-recv-text-close').addEventListener('click', closeMemoRecvTextSheet);
-  document.getElementById('memo-recv-text-overlay').addEventListener('click', closeMemoRecvTextSheet);
-
-  document.getElementById('memo-recv-text-do-btn').addEventListener('click', function() {
-    var raw = document.getElementById('memo-recv-text-input').value.trim();
-    if (!raw) { alert('テキストを貼り付けてください'); return; }
-    // MEMO:プレフィックスがある場合は除去
-    var encoded2 = raw.startsWith('MEMO:') ? raw.slice(5) : raw;
-    // URLから?memo=以降を取り出す場合も対応
-    var memoParam = encoded2.match(/[?&]memo=([^&]+)/);
-    if (memoParam) encoded2 = memoParam[1];
-    try {
-      var payload = JSON.parse(decodeURIComponent(escape(atob(encoded2))));
-      if (!payload || !payload.t) throw new Error();
-      closeMemoRecvTextSheet();
-      showMemoQrRecvModal(payload);
-    } catch(e) { alert('正しいテキストを貼り付けてください'); }
-  });
-
-  document.getElementById('share-link-copy-btn').addEventListener('click', function() {
-    const inp = document.getElementById('share-link-input');
-    inp.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    document.getElementById('share-link-copy-btn').textContent = '✅';
-    setTimeout(function() { document.getElementById('share-link-copy-btn').textContent = 'コピー'; }, 2000);
-  });
-
-  document.getElementById('share-link-share-btn').addEventListener('click', async function() {
-    if (!_shareLinkData) return;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'メモ共有：' + _shareLinkData.name, url: _shareLinkData.url });
-      } catch(e) { if (e.name !== 'AbortError') alert('共有できませんでした'); }
-    } else {
-      document.getElementById('share-link-input').select();
-      try { document.execCommand('copy'); } catch(e) {}
-      alert('URLをコピーしました！');
-    }
-  });
-
-  // QR受信モーダル
-  function showMemoQrRecvModal(payload) {
-    _pendingMemoQr = payload;
-    const folderName = payload.fn || 'メモ';
-    document.getElementById('memo-qr-recv-desc').textContent =
-      `📁「${folderName}」のメモ（${payload.t.length}文字）を取り込みますか？`;
-    document.getElementById('memo-qr-recv-overlay').style.display = 'block';
-    document.getElementById('memo-qr-recv-modal').style.display = 'block';
-  }
-
-  function closeMemoQrRecvModal() {
-    document.getElementById('memo-qr-recv-overlay').style.display = 'none';
-    document.getElementById('memo-qr-recv-modal').style.display = 'none';
-    _pendingMemoQr = null;
-  }
-
-  function importMemoPayload(payload) {
-    const folderName = payload.fn || 'メモ';
-    let target = folderList.find(f => f.name === folderName);
-    if (!target) {
-      const newId = genFolderId();
-      folderList.push({ id: newId, name: folderName });
-      target = folderList[folderList.length - 1];
-    }
-    const slot = getMemoSlot();
-    slot[target.id] = payload.t;
-    currentFolderId = target.id;
-    renderFolderTabs();
-    loadMemo();
-    openMemo();
-  }
-
-  document.getElementById('memo-qr-recv-accept').addEventListener('click', function() {
-    if (_pendingMemoQr) { importMemoPayload(_pendingMemoQr); closeMemoQrRecvModal(); }
-  });
-  document.getElementById('memo-qr-recv-dismiss').addEventListener('click', closeMemoQrRecvModal);
-  document.getElementById('memo-qr-recv-overlay').addEventListener('click', closeMemoQrRecvModal);
-
-  // ========== 起動時：URLパラメータでメモ受信を検出 ==========
-  (function() {
-    const params = new URLSearchParams(location.search);
-    const memoParam = params.get('memo');
-    if (!memoParam) return;
-    try {
-      const payload = JSON.parse(decodeURIComponent(escape(atob(memoParam))));
-      if (!payload || !payload.t) return;
-      const folderName = payload.fn || 'メモ';
-      document.getElementById('memo-recv-desc').textContent =
-        `📁 「${folderName}」のメモ（${payload.t.length}文字）`;
-      document.getElementById('memo-recv-banner').style.display = 'block';
-
-      document.getElementById('memo-recv-accept').addEventListener('click', function() {
-        importMemoPayload(payload);
-        document.getElementById('memo-recv-banner').style.display = 'none';
-        history.replaceState(null, '', location.pathname);
-      });
-
-      document.getElementById('memo-recv-dismiss').addEventListener('click', function() {
-        document.getElementById('memo-recv-banner').style.display = 'none';
-        history.replaceState(null, '', location.pathname);
-      });
-    } catch(e) {}
-  })();
-
-  // ========== 🔑 合言葉（4桁コード）でのクラウド共有（Firebase） ==========
+  // ========== 🔑 合言葉（5桁コード）でのクラウド共有（Firebase） ==========
   var sendCodeModal = document.getElementById('send-code-modal');
   var sendCodeOverlay = document.getElementById('send-code-overlay');
   var recvCodeModal = document.getElementById('recv-code-modal');
@@ -2234,14 +1509,45 @@
     recvCodeOverlay.style.display = 'none';
   }
 
+  // 合言葉の有効期限（1時間）／桁数（5桁）
+  var CODE_TTL_MS = 60 * 60 * 1000;
+  var CODE_DIGITS = 5;
+  var CODE_MAX_TRIES = 10;
+
+  // 端末の時計ずれの影響を減らすため、Firebaseサーバー時刻を基準にする
+  function getServerNow() {
+    return db.ref('.info/serverTimeOffset').once('value').then(function(s) {
+      return Date.now() + (s.val() || 0);
+    }).catch(function() { return Date.now(); });
+  }
+  function isLiveShare(v, now) {
+    return !!(v && v.timestamp && (now - v.timestamp) < CODE_TTL_MS);
+  }
+  function randomCode() {
+    var min = Math.pow(10, CODE_DIGITS - 1), span = 9 * min;
+    return Math.floor(min + Math.random() * span).toString();
+  }
+
+  // 期限内のデータがあるコードは使わず、空いているコードが取れるまで引き直す
+  function claimCode(raw, tries) {
+    if (tries >= CODE_MAX_TRIES) return Promise.reject(new Error('空いている合言葉を確保できませんでした。少し待ってからもう一度お試しください。'));
+    var code = randomCode();
+    return getServerNow().then(function(now) {
+      return db.ref('shares/' + code).transaction(function(cur) {
+        if (isLiveShare(cur, now)) return; // 使用中 → 中止（上書きしない）
+        return { text: raw, timestamp: now };
+      }).then(function(res) {
+        return res.committed ? code : claimCode(raw, tries + 1);
+      });
+    });
+  }
+
   document.getElementById('send-code-btn').addEventListener('click', function() {
     if (!db) {
       alert('Firebaseの設定（firebaseConfig）が完了していません。コード上部のfirebaseConfigに実際の値を設定してください。');
       return;
     }
     saveMemoState();
-    // 1000〜9999のランダムな4桁コードを生成
-    var code = Math.floor(1000 + Math.random() * 9000).toString();
     var scope = document.getElementById('codeshare-scope').value;
     var raw;
     if (scope === 'all') {
@@ -2257,7 +1563,7 @@
     sendCodeModal.style.display = 'block';
     sendCodeOverlay.style.display = 'block';
 
-    db.ref('shares/' + code).set({ text: raw, timestamp: Date.now() }).then(function() {
+    claimCode(raw, 0).then(function(code) {
       document.getElementById('generated-code').textContent = code;
     }).catch(function(err) {
       closeSendCodeModal();
@@ -2284,14 +1590,21 @@
 
   document.getElementById('exec-recv-btn').addEventListener('click', function() {
     var code = document.getElementById('input-code').value.trim();
-    if (code.length !== 4) { alert('4桁の数字を入力してください'); return; }
+    if (!/^\d{5}$/.test(code)) { alert('5桁の数字を入力してください'); return; }
 
-    db.ref('shares/' + code).once('value').then(function(snapshot) {
+    Promise.all([db.ref('shares/' + code).once('value'), getServerNow()]).then(function(r) {
+      var snapshot = r[0], now = r[1];
       if (!snapshot.exists()) {
         alert('該当するコードが見つかりません。番号を確認してください。');
         return;
       }
       var data = snapshot.val();
+      if (!isLiveShare(data, now)) {
+        // 期限切れ：読み込まず、可能なら削除（ルールで禁止されていれば無視）
+        db.ref('shares/' + code).remove().catch(function() {});
+        alert('この合言葉は期限切れです（発行から1時間で無効になります）。送る側にもう一度発行してもらってください。');
+        return;
+      }
       if (!data || !data.text) {
         alert('データの形式が正しくありません。');
         return;
@@ -2309,7 +1622,20 @@
   // 起動
   loadData();
   render();
-  renderFolderTabs();
+  updateAutoSaveBtn();
+
+  document.getElementById('autosave-btn').addEventListener('click', function() {
+    autoSaveOn = !autoSaveOn;
+    try { localStorage.setItem(AUTOSAVE_KEY, autoSaveOn ? 'on' : 'off'); } catch(e) {}
+    updateAutoSaveBtn();
+    clearTimeout(_autoSaveTimer);
+    if (autoSaveOn) { saveMemoState(); scheduleAutoSave(); } // ONにした時点の状態もすぐ保存
+    const t = document.getElementById('toast');
+    const orig = '💾 保存しました！';
+    t.textContent = autoSaveOn ? '自動保存をONにしました' : '自動保存をOFFにしました（💾で手動保存）';
+    t.classList.add('show');
+    setTimeout(() => { t.classList.remove('show'); t.textContent = orig; }, 1800);
+  });
 
   // 設定パネル開閉
   var settingsPanel = document.getElementById('settings-panel');
@@ -2324,26 +1650,45 @@
     if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
   }
 
-  document.getElementById('settings-btn').addEventListener('click', function() {
-    settingsPanel.style.display = 'block';
-    settingsOverlay.style.display = 'block';
-  });
-  document.getElementById('settings-close').addEventListener('click', function() {
-    settingsPanel.style.display = 'none';
-    settingsOverlay.style.display = 'none';
-  });
-  settingsOverlay.addEventListener('click', function() {
-    settingsPanel.style.display = 'none';
-    settingsOverlay.style.display = 'none';
-  });
+  function openDrawer() {
+    updateSeatCountLabel();
+    settingsPanel.classList.add('open');
+    settingsOverlay.classList.add('open');
+    settingsPanel.setAttribute('aria-hidden', 'false');
+  }
+  function closeDrawer() {
+    settingsPanel.classList.remove('open');
+    settingsOverlay.classList.remove('open');
+    settingsPanel.setAttribute('aria-hidden', 'true');
+  }
+  document.getElementById('settings-btn').addEventListener('click', openDrawer);
+  document.getElementById('settings-close').addEventListener('click', closeDrawer);
+  settingsOverlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
 
-  // フォントサイズ
+  // 右スワイプでドロワーを閉じる
+  var _dx0 = null, _dy0 = null;
+  settingsPanel.addEventListener('touchstart', function(e) { _dx0 = e.touches[0].clientX; _dy0 = e.touches[0].clientY; }, { passive: true });
+  settingsPanel.addEventListener('touchend', function(e) {
+    if (_dx0 === null) return;
+    var dx = e.changedTouches[0].clientX - _dx0, dy = Math.abs(e.changedTouches[0].clientY - _dy0);
+    if (dx > 70 && dy < 40) closeDrawer();
+    _dx0 = null;
+  }, { passive: true });
+
+  // フォントサイズ（座席名）：CSS変数で全座席に反映し、端末に保存する
+  var FONT_KEY = 'seat-planner-fontsize';
+  function applyFontSize(px) {
+    px = Math.max(8, Math.min(20, parseInt(px) || 13));
+    document.documentElement.style.setProperty('--seat-font', px + 'px');
+    document.getElementById('font-slider').value = px;
+    document.getElementById('font-size-label').textContent = px + 'px';
+    return px;
+  }
+  try { applyFontSize(localStorage.getItem(FONT_KEY) || 13); } catch(e) { applyFontSize(13); }
   document.getElementById('font-slider').addEventListener('input', function() {
-    var sz = this.value + 'px';
-    document.getElementById('font-size-label').textContent = sz;
-    document.querySelectorAll('.seat-name').forEach(function(el) {
-      if (!el.classList.contains('empty')) el.style.fontSize = sz;
-    });
+    var px = applyFontSize(this.value);
+    try { localStorage.setItem(FONT_KEY, px); } catch(e) {}
   });
 
   // コピー
@@ -2362,10 +1707,10 @@
       alert(fromLabel + ' にデータがありません'); return;
     }
     if (!confirm(fromLabel + ' → ' + toLabel + ' にコピーしますか？')) return;
+    pushUndo();
     allSeats[currentDay][currentAmPm] = JSON.parse(JSON.stringify(allSeats[fromDay][fromAmPm]));
     render();
-    settingsPanel.style.display = 'none';
-    settingsOverlay.style.display = 'none';
+    closeDrawer();
     alert('コピーしました！');
   });
 //
@@ -2373,7 +1718,14 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js');
+    // updateViaCache:'none'：sw.js 自体はHTTPキャッシュを使わず、毎回サーバーで確認する
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+      reg.update().catch(() => {});
+      // ホーム画面アプリなどを開き直した時にも、更新を確認する
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    }).catch(() => {});
   });
 }
 </script>
