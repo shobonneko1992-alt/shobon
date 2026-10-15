@@ -268,7 +268,7 @@
   }
 
 </style>
-<!-- 🔑 合言葉（5桁コード）共有機能用：Firebase SDK（Realtime Database） -->
+<!-- 🔑 パスワード（5桁）共有機能用：Firebase SDK（Realtime Database） -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
@@ -439,10 +439,10 @@
   </div>
 
 
-  <!-- 🔑 合言葉（5桁コード）でのクラウド共有 -->
+  <!-- 🔑 パスワード（5桁）でのデータ共有 -->
   <div style="border-top:1px solid #eee;padding-top:12px;margin-top:4px;">
     <button class="settings-accordion-btn" onclick="toggleAccordion('acc-codeshare')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0ede8;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#555;cursor:pointer;">
-      <span>🔑 合言葉でクラウド共有</span>
+      <span>🔑 パスワードでデータ共有</span>
       <span id="acc-codeshare-arrow" style="color:#aaa;transition:transform 0.2s;">▾</span>
     </button>
     <div id="acc-codeshare" style="display:none;padding:12px 2px 4px;">
@@ -455,7 +455,7 @@
         <button id="send-code-btn" style="flex:1;padding:14px 8px;background:#7040b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
         <button id="recv-code-btn" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
-      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、5桁の数字（合言葉）でやり取りします。送る側は表示された5桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。合言葉は発行から1時間で無効になります。受け取り側は自動的に1日分／全曜日を判定します。</p>
+      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、5桁の数字（パスワード）でやり取りします。送る側は表示された5桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。パスワードは発行から1時間で無効になります。受け取り側は自動的に1日分／全曜日を判定します。</p>
     </div>
   </div>
 
@@ -515,26 +515,26 @@
   </div>
 </div>
 
-<!-- 🔑 合言葉（5桁コード）送信 モーダル -->
+<!-- 🔑 パスワード（5桁）送信 モーダル -->
 <div id="send-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
 <div id="send-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉（5桁コード）の発行</span>
+    <span style="font-size:14px;font-weight:700;color:#333;">🔑 パスワード（5桁）の発行</span>
     <span id="send-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の5桁コードを伝えてください。<br>（1時間で無効になります）</p>
+  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の5桁のパスワードを伝えてください。<br>（1時間で無効になります）</p>
   <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#7040b8;text-align:center;margin:16px 0;padding:12px;background:#f0e8fa;border-radius:10px;" id="generated-code">----</div>
   <p style="font-size:10px;color:#aaa;text-align:center;">※データは一定時間後に自動で失効します。</p>
 </div>
 
-<!-- 🔑 合言葉（5桁コード）受信 モーダル -->
+<!-- 🔑 パスワード（5桁）受信 モーダル -->
 <div id="recv-code-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1600;"></div>
 <div id="recv-code-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#faf9f6;border-radius:16px;padding:22px 18px 18px;width:88%;max-width:340px;z-index:1601;box-shadow:0 8px 40px rgba(0,0,0,0.22);">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:14px;font-weight:700;color:#333;">🔑 合言葉でデータを受信</span>
+    <span style="font-size:14px;font-weight:700;color:#333;">🔑 パスワードでデータを受信</span>
     <span id="recv-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">教えてもらった5桁のコードを入力してください。</p>
+  <p style="font-size:12px;color:#888;text-align:center;margin-bottom:6px;">教えてもらった5桁のパスワードを入力してください。</p>
   <input type="number" id="input-code" style="font-size:26px;font-weight:700;letter-spacing:8px;text-align:center;width:180px;margin:10px auto;display:block;padding:8px;border:1px solid #ddd;border-radius:8px;" placeholder="00000" maxlength="5" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
   <button id="exec-recv-btn" style="width:100%;padding:11px;background:#d08020;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;">データを受信する</button>
 </div>
@@ -559,7 +559,7 @@
 <script>
 //
   // ========================================================================
-  // 🔑 Firebase設定（合言葉＝5桁コードでのクラウド共有機能に使用）
+  // 🔑 Firebase設定（パスワード＝5桁コードでのデータ共有機能に使用）
   // ------------------------------------------------------------------------
   // 【設定手順】
   // 1. https://console.firebase.google.com/ にアクセスしてプロジェクトを作成
@@ -572,7 +572,7 @@
   //    そのまま貼り付ける（databaseURL は Realtime Database の
   //    トップ画面に表示されているURLをコピー）
   // 5. Realtime Database の「ルール」タブで、例えば以下のように
-  //    設定（今回のような一時的な合言葉共有用途の簡易ルール例）：
+  //    設定（今回のような一時的なパスワード共有用途の簡易ルール例）：
   //    {
   //      "rules": {
   //        "shares": {
@@ -597,14 +597,14 @@
   };
 
   // firebaseConfigが未設定（プレースホルダのまま）の場合は初期化しない
-  // → クラウド共有機能のボタンを押した時にエラーメッセージで案内する
+  // → データ共有機能のボタンを押した時にエラーメッセージで案内する
   let db = null;
   try {
     if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
       firebase.initializeApp(firebaseConfig);
       db = firebase.database();
     } else {
-      console.warn('firebaseConfigが未設定です。「合言葉で共有」機能を使うには、コード上部のfirebaseConfigに実際の値を設定してください。');
+      console.warn('firebaseConfigが未設定です。「パスワードで共有」機能を使うには、コード上部のfirebaseConfigに実際の値を設定してください。');
     }
   } catch (e) {
     console.warn('Firebaseの初期化に失敗しました:', e);
@@ -1177,7 +1177,7 @@
 
   document.getElementById('save-btn').addEventListener('click', saveData);
 
-  // 1日分（曜日・AM/PM単位）のデータをJSONテキスト化（合言葉共有で使用）
+  // 1日分（曜日・AM/PM単位）のデータをJSONテキスト化（パスワード共有で使用）
   function encodeDayDataReadable(d, a) {
     var b = board();
     var W = b.clientWidth, H = b.clientHeight;
@@ -1494,7 +1494,7 @@
     closeDrawer();
   });
 
-  // ========== 🔑 合言葉（5桁コード）でのクラウド共有（Firebase） ==========
+  // ========== 🔑 パスワード（5桁）でのデータ共有（Firebase） ==========
   var sendCodeModal = document.getElementById('send-code-modal');
   var sendCodeOverlay = document.getElementById('send-code-overlay');
   var recvCodeModal = document.getElementById('recv-code-modal');
@@ -1509,7 +1509,7 @@
     recvCodeOverlay.style.display = 'none';
   }
 
-  // 合言葉の有効期限（1時間）／桁数（5桁）
+  // パスワードの有効期限（1時間）／桁数（5桁）
   var CODE_TTL_MS = 60 * 60 * 1000;
   var CODE_DIGITS = 5;
   var CODE_MAX_TRIES = 10;
@@ -1530,7 +1530,7 @@
 
   // 期限内のデータがあるコードは使わず、空いているコードが取れるまで引き直す
   function claimCode(raw, tries) {
-    if (tries >= CODE_MAX_TRIES) return Promise.reject(new Error('空いている合言葉を確保できませんでした。少し待ってからもう一度お試しください。'));
+    if (tries >= CODE_MAX_TRIES) return Promise.reject(new Error('空いているパスワードを確保できませんでした。少し待ってからもう一度お試しください。'));
     var code = randomCode();
     return getServerNow().then(function(now) {
       return db.ref('shares/' + code).transaction(function(cur) {
@@ -1595,14 +1595,14 @@
     Promise.all([db.ref('shares/' + code).once('value'), getServerNow()]).then(function(r) {
       var snapshot = r[0], now = r[1];
       if (!snapshot.exists()) {
-        alert('該当するコードが見つかりません。番号を確認してください。');
+        alert('該当するパスワードが見つかりません。入力した数字を確認してください。');
         return;
       }
       var data = snapshot.val();
       if (!isLiveShare(data, now)) {
         // 期限切れ：読み込まず、可能なら削除（ルールで禁止されていれば無視）
         db.ref('shares/' + code).remove().catch(function() {});
-        alert('この合言葉は期限切れです（発行から1時間で無効になります）。送る側にもう一度発行してもらってください。');
+        alert('このパスワードは期限切れです（発行から1時間で無効になります）。送る側にもう一度発行してもらってください。');
         return;
       }
       if (!data || !data.text) {
