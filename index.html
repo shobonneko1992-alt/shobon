@@ -451,11 +451,15 @@
         <option value="day">現在の1日分（表示中のみ）</option>
         <option value="all">全曜日まとめて（月〜金・AM/PM全部）</option>
       </select>
+      <label style="font-size:11px;color:#777;font-weight:700;display:block;margin-bottom:6px;">送るパスワード</label>
+      <select id="codeshare-mode" style="width:100%;font-size:13px;border:1px solid #ddd;border-radius:8px;padding:9px;background:#fff;color:#444;margin-bottom:10px;">
+        <option value="new">新しく発行する</option>
+      </select>
       <div style="display:flex;gap:8px;">
         <button id="send-code-btn" style="flex:1;padding:14px 8px;background:#7040b8;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📤 送る</button>
         <button id="recv-code-btn" style="flex:1;padding:14px 8px;background:#d08020;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📥 受け取る</button>
       </div>
-      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、5桁の数字（パスワード）でやり取りします。送る側は表示された5桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。パスワードは発行から1時間で無効になります。受け取り側は自動的に1日分／全曜日を判定します。</p>
+      <p style="font-size:10px;color:#999;margin-top:10px;line-height:1.6;">「送る範囲」で選んだデータを、5桁の数字（パスワード）でやり取りします。送る側は表示された5桁を相手に伝え、受け取る側はその数字を入力してください（ネット接続が必要です）。パスワードは発行から1時間で無効になります。直しがあった時は「送るパスワード」で「上書き」を選んで送ると、同じパスワードのまま内容を更新できます（上書きできるのは、送った端末だけです。受け取る側は読むだけで、書き換えられません）。受け取り側は自動的に1日分／全曜日を判定します。</p>
     </div>
   </div>
 
@@ -522,8 +526,9 @@
     <span style="font-size:14px;font-weight:700;color:#333;">🔑 パスワード（5桁）の発行</span>
     <span id="send-code-close" style="font-size:20px;color:#aaa;cursor:pointer;padding:0 4px;">×</span>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">現在の曜日・時間帯の座席配置とメモを送信しました。<br>相手に以下の5桁のパスワードを伝えてください。<br>（1時間で無効になります）</p>
+  <p style="font-size:12px;color:#888;text-align:center;line-height:1.6;">座席配置とメモを送信しました。<br>相手に以下の5桁のパスワードを伝えてください。<br>（1時間で無効になります）</p>
   <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#7040b8;text-align:center;margin:16px 0;padding:12px;background:#f0e8fa;border-radius:10px;" id="generated-code">----</div>
+  <p id="send-code-note" style="display:none;font-size:11px;color:#7040b8;text-align:center;margin-bottom:6px;font-weight:700;">同じパスワードに上書きしました</p>
   <p style="font-size:10px;color:#aaa;text-align:center;">※データは一定時間後に自動で失効します。</p>
 </div>
 
@@ -1528,19 +1533,84 @@
     return Math.floor(min + Math.random() * span).toString();
   }
 
-  // 期限内のデータがあるコードは使わず、空いているコードが取れるまで引き直す
-  function claimCode(raw, tries) {
-    if (tries >= CODE_MAX_TRIES) return Promise.reject(new Error('空いているパスワードを確保できませんでした。少し待ってからもう一度お試しください。'));
+  // ===== データの置き場所 =====
+  // shares/<5桁>/data = { text, timestamp }   … 誰でも読める（パスワードを知っていれば）
+  // shares/<5桁>/key  = 送信した端末だけが持つ秘密の鍵 … 読めない。一致する時だけ上書きできる（ルールで確認）
+  function isPermissionDenied(err) {
+    return !!err && (err.code === 'PERMISSION_DENIED' || /permission[_ ]denied/i.test(err.message || ''));
+  }
+  function newKey() {
+    var a = new Uint8Array(24);
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+    else for (var i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256);
+    return Array.prototype.map.call(a, function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+  function readShareData(code) {
+    return db.ref('shares/' + code + '/data').once('value').then(function(s) { return s.val(); });
+  }
+
+  // 期限内のデータがあるパスワードは使わず、空いているものが取れるまで引き直す
+  // 同時に同じ番号を取り合っても、先に書いた方だけが有効（後の書き込みはルールで拒否され、引き直す）
+  function claimCode(raw, tries, lastErr) {
+    if (tries >= CODE_MAX_TRIES) {
+      var msg = '空いているパスワードを確保できませんでした。少し待ってからもう一度お試しください。';
+      if (lastErr && isPermissionDenied(lastErr)) msg += '\n（書き込みが拒否されています。Firebaseのルール設定を確認してください）';
+      return Promise.reject(new Error(msg));
+    }
     var code = randomCode();
+    var key = newKey();
     return getServerNow().then(function(now) {
-      return db.ref('shares/' + code).transaction(function(cur) {
-        if (isLiveShare(cur, now)) return; // 使用中 → 中止（上書きしない）
-        return { text: raw, timestamp: now };
-      }).then(function(res) {
-        return res.committed ? code : claimCode(raw, tries + 1);
+      return readShareData(code).then(function(cur) {
+        if (isLiveShare(cur, now)) return claimCode(raw, tries + 1, null); // 使用中 → 次の番号へ
+        return db.ref('shares/' + code).set({ data: { text: raw, timestamp: now }, key: key })
+          .then(function() { return { code: code, key: key }; });
       });
+    }).catch(function(err) {
+      // 書き込み拒否（直前に他の人が使い始めた等）は「使用中」とみなして引き直す
+      if (isPermissionDenied(err)) return claimCode(raw, tries + 1, err);
+      throw err;
     });
   }
+
+  // ===== 直前に送ったパスワードと鍵を、この端末だけに覚えて、同じパスワードへ上書きできるようにする =====
+  var LASTSHARE_KEY = 'seat-planner-lastshare';
+  var lastShare = null;
+  try { lastShare = JSON.parse(localStorage.getItem(LASTSHARE_KEY) || 'null'); } catch(e) {}
+
+  function validLastShare() {
+    return !!(lastShare && lastShare.code && lastShare.key && (Date.now() - lastShare.ts) < CODE_TTL_MS);
+  }
+  function setLastShare(code, key) {
+    lastShare = { code: code, key: key, ts: Date.now() };
+    try { localStorage.setItem(LASTSHARE_KEY, JSON.stringify(lastShare)); } catch(e) {}
+  }
+  // 選択肢を作り直す。上書きできる時は「上書き：12345」を出す（preferOverwriteなら選択状態にする）
+  function refreshShareMode(preferOverwrite) {
+    var sel = document.getElementById('codeshare-mode');
+    if (!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = '';
+    var optNew = document.createElement('option');
+    optNew.value = 'new'; optNew.textContent = '新しく発行する';
+    sel.appendChild(optNew);
+    if (validLastShare()) {
+      var optOw = document.createElement('option');
+      optOw.value = 'overwrite'; optOw.textContent = '上書き：' + lastShare.code;
+      sel.appendChild(optOw);
+      sel.value = (preferOverwrite || prev === 'overwrite') ? 'overwrite' : 'new';
+    }
+  }
+  // 同じパスワードに書き込む（鍵が一致する時だけ成功。期限も、ここから1時間に延びる）
+  function overwriteCode(code, key, raw) {
+    return getServerNow().then(function(now) {
+      return db.ref('shares/' + code).set({ data: { text: raw, timestamp: now }, key: key });
+    }).then(function() { return { code: code, key: key }; })
+      .catch(function(err) {
+        if (isPermissionDenied(err)) throw new Error('上書きできませんでした。「送るパスワード」を「新しく発行する」にして送ってください。');
+        throw err;
+      });
+  }
+  refreshShareMode(true);
 
   document.getElementById('send-code-btn').addEventListener('click', function() {
     if (!db) {
@@ -1563,8 +1633,15 @@
     sendCodeModal.style.display = 'block';
     sendCodeOverlay.style.display = 'block';
 
-    claimCode(raw, 0).then(function(code) {
-      document.getElementById('generated-code').textContent = code;
+    var overwrite = document.getElementById('codeshare-mode').value === 'overwrite' && validLastShare();
+    var job = overwrite
+      ? overwriteCode(lastShare.code, lastShare.key, raw)
+      : claimCode(raw, 0);
+    document.getElementById('send-code-note').style.display = overwrite ? 'block' : 'none';
+    job.then(function(r) {
+      document.getElementById('generated-code').textContent = r.code;
+      setLastShare(r.code, r.key);
+      refreshShareMode(true); // 次回は、続けて上書きできる状態にしておく
     }).catch(function(err) {
       closeSendCodeModal();
       alert('送信エラー: ' + err.message);
@@ -1592,7 +1669,7 @@
     var code = document.getElementById('input-code').value.trim();
     if (!/^\d{5}$/.test(code)) { alert('5桁の数字を入力してください'); return; }
 
-    Promise.all([db.ref('shares/' + code).once('value'), getServerNow()]).then(function(r) {
+    Promise.all([db.ref('shares/' + code + '/data').once('value'), getServerNow()]).then(function(r) {
       var snapshot = r[0], now = r[1];
       if (!snapshot.exists()) {
         alert('該当するパスワードが見つかりません。入力した数字を確認してください。');
@@ -1600,7 +1677,7 @@
       }
       var data = snapshot.val();
       if (!isLiveShare(data, now)) {
-        // 期限切れ：読み込まず、可能なら削除（ルールで禁止されていれば無視）
+        // 期限切れ：読み込まず、削除を試みる（失敗しても無視）
         db.ref('shares/' + code).remove().catch(function() {});
         alert('このパスワードは期限切れです（発行から1時間で無効になります）。送る側にもう一度発行してもらってください。');
         return;
@@ -1652,6 +1729,7 @@
 
   function openDrawer() {
     updateSeatCountLabel();
+    if (typeof refreshShareMode === 'function') refreshShareMode();
     settingsPanel.classList.add('open');
     settingsOverlay.classList.add('open');
     settingsPanel.setAttribute('aria-hidden', 'false');
