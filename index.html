@@ -1545,8 +1545,14 @@
     else for (var i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256);
     return Array.prototype.map.call(a, function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
+  // ルールは、期限（1時間）を過ぎたデータの読み取りを拒否する。拒否は「データなし」として扱う。
   function readShareData(code) {
-    return db.ref('shares/' + code + '/data').once('value').then(function(s) { return s.val(); });
+    return db.ref('shares/' + code + '/data').once('value')
+      .then(function(s) { return s.val(); })
+      .catch(function(err) {
+        if (isPermissionDenied(err)) return null;
+        throw err;
+      });
   }
 
   // 期限内のデータがあるパスワードは使わず、空いているものが取れるまで引き直す
@@ -1669,13 +1675,13 @@
     var code = document.getElementById('input-code').value.trim();
     if (!/^\d{5}$/.test(code)) { alert('5桁の数字を入力してください'); return; }
 
-    Promise.all([db.ref('shares/' + code + '/data').once('value'), getServerNow()]).then(function(r) {
-      var snapshot = r[0], now = r[1];
-      if (!snapshot.exists()) {
-        alert('該当するパスワードが見つかりません。入力した数字を確認してください。');
+    Promise.all([readShareData(code), getServerNow()]).then(function(r) {
+      var data = r[0], now = r[1];
+      if (!data) {
+        // 存在しない、または期限（1時間）切れ（ルールが読み取りを拒否）
+        alert('該当するパスワードが見つからないか、期限切れです（発行から1時間で無効になります）。\n入力した数字を確認するか、送る側にもう一度送ってもらってください。');
         return;
       }
-      var data = snapshot.val();
       if (!isLiveShare(data, now)) {
         // 期限切れ：読み込まず、削除を試みる（失敗しても無視）
         db.ref('shares/' + code).remove().catch(function() {});
